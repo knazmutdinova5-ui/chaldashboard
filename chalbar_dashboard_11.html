@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHALBAR — Дашборд выручки · Нариманова</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f1f5f9; --surface: #ffffff; --surface-2: #f8fafc; --border: #e2e8f0;
+  --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+  --green: #16a34a; --green-light: #f0fdf4; --red: #dc2626; --red-light: #fef2f2;
+  --amber: #d97706; --amber-light: #fffbeb; --primary: #6366f1; --primary-light: #eef2ff;
+  --teal: #14b8a6; --day: #f59e0b;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -1px rgba(0,0,0,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text-1); font-size: 13px; line-height: 1.5; }
+
+.header { background: #0f172a; padding: 0 28px; display: flex; align-items: center; gap: 28px; min-height: 52px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+.header-logo-text { font-size: 16px; font-weight: 800; letter-spacing: 2.5px; color: #fff; white-space: nowrap; }
+.loc-badge { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: #a5b4fc; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.4); padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.upd { margin-left: auto; font-size: 11px; color: rgba(255,255,255,.45); white-space: nowrap; }
+.month-select { padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; }
+.month-select option { background: #1e293b; color: #fff; }
+.tab-nav { display: flex; gap: 4px; }
+.tab-btn { padding: 5px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,.2); background: transparent; color: rgba(255,255,255,.6); font-size: 12px; font-weight: 600; cursor: pointer; letter-spacing: .5px; transition: .15s; }
+.tab-btn.active { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.4); }
+.tab-btn:hover:not(.active) { background: rgba(255,255,255,.08); }
+
+.main { padding: 20px 28px 40px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 600px) { .main { padding: 16px 16px 32px; } .header { padding: 8px 16px; gap: 12px; } .upd { margin-left: 0; } .rev-fact { font-size: 28px; } }
+
+.revenue-block { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-md); padding: 24px 28px; margin-bottom: 16px; }
+.rev-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 16px; flex-wrap: wrap; }
+.rev-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-3); text-transform: uppercase; margin-bottom: 4px; }
+.rev-fact { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.rev-fact span { font-size: 18px; font-weight: 500; color: var(--text-3); margin-left: 4px; }
+.rev-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .5px; }
+.badge-closed { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-open { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.badge-plan { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.rev-pct-big { font-size: 28px; font-weight: 800; line-height: 1; }
+.rev-pct-sub { font-size: 11px; color: var(--text-3); }
+.progress-wrap { position: relative; background: #e2e8f0; border-radius: 8px; height: 18px; overflow: hidden; margin-bottom: 12px; }
+.progress-fill { height: 100%; border-radius: 8px; transition: width .6s ease; position: relative; }
+.progress-pct-label { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 800; color: rgba(255,255,255,.9); }
+.rev-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+.rev-meta-item { display: flex; flex-direction: column; gap: 1px; }
+.rev-meta-label { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.rev-meta-val { font-size: 15px; font-weight: 700; }
+.rev-meta-val.red { color: var(--red); } .rev-meta-val.green { color: var(--green); }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr; } }
+.kpi-card { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 18px; }
+.kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-3); text-transform: uppercase; margin-bottom: 8px; }
+.kpi-fact { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+.kpi-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.kpi-plan { font-size: 11px; color: var(--text-3); }
+.kpi-delta { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+.delta-pos { background: var(--green-light); color: var(--green); }
+.delta-neg { background: var(--red-light); color: var(--red); }
+.delta-neu { background: var(--amber-light); color: var(--amber); }
+.kpi-note { font-size: 10px; color: var(--text-3); margin-top: 6px; }
+.kpi-mini-bar { width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.kpi-mini-fill { height: 100%; border-radius: 2px; }
+
+.remaining-block { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 14px; padding: 20px 28px; margin-bottom: 16px; display: flex; align-items: center; gap: 40px; flex-wrap: wrap; }
+.remaining-item { flex: 1; min-width: 140px; }
+.remaining-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,.5); text-transform: uppercase; margin-bottom: 4px; }
+.remaining-val { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; }
+.remaining-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.remaining-divider { width: 1px; height: 50px; background: rgba(255,255,255,.15); }
+
+.struct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+@media (max-width: 900px) { .struct-grid { grid-template-columns: 1fr; } }
+.struct-card { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 18px; }
+.stack-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #e2e8f0; margin: 10px 0 10px; }
+.stack-bar div { height: 100%; }
+.stack-legend { display: flex; gap: 18px; flex-wrap: wrap; }
+.stack-legend .it { display: flex; flex-direction: column; }
+.stack-legend .lb { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.stack-legend .vl { font-size: 14px; font-weight: 700; }
+.stack-legend .sb { font-size: 11px; color: var(--text-2); }
+.legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+.charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.charts-grid.two { grid-template-columns: 3fr 2fr; }
+.chart-card { min-width: 0; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; }
+.chart-card h3 { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
+.chart-wrap { position: relative; height: 320px; }
+@media (max-width: 1300px) { .charts-grid, .charts-grid.two { grid-template-columns: 1fr; } }
+
+.table-block { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px; }
+.table-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.table-header h3 { font-size: 13px; font-weight: 700; }
+.table-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-3); }
+.events-table { width: 100%; border-collapse: collapse; }
+.events-table th { background: var(--surface-2); padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.events-table th.r { text-align: right; }
+.events-table th.grp { text-align: center; border-left: 1px solid var(--border); }
+.events-table td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; white-space: nowrap; }
+.events-table td.r { text-align: right; }
+.events-table td.bl, .events-table th.bl { border-left: 1px solid var(--border); }
+.events-table tr:last-child td { border-bottom: none; }
+.events-table tr.row-total td { font-weight: 700; background: var(--surface-2); border-top: 2px solid var(--border); }
+.events-table tr.row-over td { background: #f0fdf4; }
+.events-table tr.row-under td { background: #fef2f2; }
+.events-table tr.row-empty td { background: #f8fafc; color: var(--text-3); }
+.events-table tr.row-plan td { background: #f5f7ff; color: var(--text-2); font-style: italic; }
+.events-table tbody tr:hover td { filter: brightness(.98); }
+.mini-prog { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.mini-bar { width: 48px; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.mini-fill { height: 100%; border-radius: 3px; }
+.pct-text { font-size: 11px; font-weight: 700; min-width: 40px; text-align: right; }
+.fr-pos { color: var(--green); font-weight: 600; } .fr-neg { color: var(--red); font-weight: 600; } .fr-na { color: var(--text-3); }
+.event-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.tag { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; margin-left: 6px; font-style: normal; vertical-align: middle; }
+.tag-plan { background: #eef2ff; color: #4338ca; }
+.tag-part { background: var(--amber-light); color: var(--amber); }
+
+.tbl-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tbl-filter { padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 11px; color: var(--text-1); cursor: pointer; outline: none; }
+.tbl-filter:focus { border-color: var(--primary); }
+input[type=number].tbl-filter { -moz-appearance: textfield; }
+input[type=number].tbl-filter::-webkit-outer-spin-button, input[type=number].tbl-filter::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.dow-toggle-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.dow-toggle-btn { padding: 4px 11px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 11px; font-weight: 700; color: var(--text-2); cursor: pointer; }
+.dow-toggle-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.dow-toggle-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+.dow-toggle-reset { font-size: 11px; color: var(--text-3); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 4px 2px; }
+
+.pbar { margin-bottom: 10px; }
+.pbar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.pbar-label { font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .5px; }
+.pbar-nums { font-size: 12px; color: var(--text-3); }
+.pbar-nums b { color: var(--text-1); }
+.pbar .progress-wrap { height: 12px; margin-bottom: 0; overflow: visible; }
+.pbar-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-1); border-radius: 1px; }
+.pbar-legend { font-size: 10px; color: var(--text-3); margin: -2px 0 12px; }
+.day-card { border-left: 4px solid var(--day); }
+.events-table tr.grp-row th { text-align: center; font-size: 10px; letter-spacing: 1px; padding: 6px 12px; }
+.events-table th.g-all { background: var(--primary-light); color: #4338ca; border-left: 3px solid var(--primary); }
+.events-table th.g-day { background: #fff7ed; color: #c2410c; border-left: 3px solid var(--day); }
+.events-table .g-all-s { border-left: 3px solid var(--primary) !important; }
+.events-table .g-day-s { border-left: 3px solid var(--day) !important; }
+.events-table td.c-over { background: #f0fdf4; }
+.events-table td.c-under { background: #fef2f2; }
+.m-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; transition: .15s; }
+.m-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.m-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+.m-btn.lunch.active { background: var(--day); border-color: var(--day); }
+.y-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: var(--surface); border-radius: 12px; padding: 12px 16px; box-shadow: var(--shadow); }
+.y-note { font-size: 11px; color: var(--amber); background: var(--amber-light); border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg button { border: none; background: transparent; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--text-2); cursor: pointer; }
+.seg button.active { background: var(--surface); color: var(--text-1); box-shadow: var(--shadow); }
+
+.sec-head { display: flex; align-items: center; gap: 10px; margin: 26px 0 12px; }
+.sec-head:first-child { margin-top: 0; }
+.sec-bar { width: 4px; height: 22px; border-radius: 2px; }
+.sec-title { font-size: 15px; font-weight: 800; letter-spacing: .2px; }
+.sec-sub { font-size: 12px; color: var(--text-3); }
+.kpi-grid.three { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .kpi-grid.three { grid-template-columns: 1fr; } }
+.kpi-card.lunch { border-top: 3px solid var(--day); }
+.kpi-card.all { border-top: 3px solid var(--primary); }
+.lunch-block { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-md); padding: 20px 28px; margin-bottom: 16px; border-left: 4px solid var(--day); }
+.charts-grid.half { grid-template-columns: 1fr 1fr; }
+@media (max-width: 1100px) { .charts-grid.half { grid-template-columns: 1fr; } }
+
+.wk-nav { display: flex; align-items: center; gap: 6px; }
+.wk-arrow { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; color: var(--text-2); }
+.wk-arrow:disabled { opacity: .35; cursor: default; }
+.cmp-table td.seg-start, .cmp-table th.seg-start { border-left: 2px solid var(--border); }
+.cmp-table th.seg-wkend, .events-table tr.wkend td { background: #faf5ff; }
+.events-table th.seg-h { text-align: center; font-size: 10px; letter-spacing: 1px; }
+.empty-state { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 36px 28px; text-align: center; margin-bottom: 16px; }
+.empty-state h2 { font-size: 18px; margin-bottom: 6px; }
+.empty-state p { color: var(--text-2); max-width: 640px; margin: 0 auto 6px; }
+.empty-list { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; text-align: left; margin-top: 14px; color: var(--text-2); font-size: 12px; }
+@media (max-width: 700px) { .empty-list { grid-template-columns: 1fr; } }
+.login-wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 16px; z-index: 200; }
+.login-card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-md); padding: 32px 28px; width: 100%; max-width: 340px; }
+.login-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+.login-input:focus { border-color: var(--primary); }
+.login-btn { width: 100%; padding: 10px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+#btn-refresh:disabled { opacity: .5; cursor: default; }
+.header .upd { margin-left: auto; }
+</style>
+</head>
+<body>
+<div id="login" class="login-wrap"><form id="login-form" class="login-card">
+  <div class="header-logo-text" style="color:var(--text-1)">CHALBAR</div>
+  <div style="color:var(--text-3);font-size:12px;margin:2px 0 18px">Дашборд выручки · Нариманова</div>
+  <input id="login-pass" type="password" class="login-input" placeholder="Пароль" autocomplete="current-password">
+  <label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text-2);margin:10px 0 14px"><input type="checkbox" id="login-remember" checked> запомнить на этом устройстве</label>
+  <div id="login-err" style="display:none;color:var(--red);font-size:12px;margin:-6px 0 10px">Неверный пароль</div>
+  <button class="login-btn" type="submit">Войти</button>
+</form></div>
+<div id="app" style="display:none">
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="header-logo-text">CHALBAR</div>
+    <span class="loc-badge">Нариманова</span>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-btn-1" onclick="switchTab(1)">Месяц</button>
+    <button class="tab-btn" id="tab-btn-2" onclick="switchTab(2)">Динамика</button>
+    <button class="tab-btn" id="tab-btn-3" onclick="switchTab(3)">Год к году</button>
+  </div>
+  <div id="tab1-selectors" style="display:flex;gap:8px;align-items:center">
+    <select class="month-select" id="month-select"></select>
+  </div>
+  <div class="upd" id="upd"></div>
+  <button class="tab-btn" id="btn-refresh" title="Загрузить свежие данные из таблицы">⟳ Обновить</button>
+  <button class="tab-btn" onclick="logout()" title="Выйти">Выйти</button>
+</div>
+<div class="main" id="main-content"></div>
+</div>
+<script>
+// ══════════════════════════════════════════════
+//  ДАННЫЕ — лист «ИЮНЬ 2026-ДЕКАБРЬ 2026»
+//  d дата · dw день недели · rp/gp план выручка/гости · rpd/gpd план дневной
+//  r выручка общая · c нал · cd безнал · ya Яндекс Еда · g гости
+//  dr/dg дневная выручка/гости · fx тех. столбец с/с
+//  (на этапе интеграции RAW будет подгружаться из Google-таблицы)
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  ИСТОЧНИК ДАННЫХ — Google-таблица, вкладка «Данные»
+//  Таблица открыта по ссылке на просмотр (или опубликована в интернете как CSV). Если связи нет — показывается последний снимок (SNAPSHOT).
+// ══════════════════════════════════════════════
+const SHEET_ID = '1p31cfDBKOKlwJ__67_khx38a5w_z6WzP7Thhz_kHLHs';
+const SHEET_GID = '1574584777';   // вкладка «Данные»
+const SHEET_URLS = [
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`,       // доступ «все, у кого есть ссылка»
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${SHEET_GID}&single=true&output=csv`, // если таблица опубликована
+];
+// пароль на вход (хранится в виде SHA-256, сам пароль в коде не виден)
+const PASS_HASH = 'ec1eb14fa6bd4efb3d5acd6336397371ef002ba349226a4e2e271c24526aa473';
+const SNAPSHOT = [{"d":"2026-06-01","dw":"пн","r":267570.0,"c":32283.0,"cd":235267.0,"g":138.0},{"d":"2026-06-02","dw":"вт","r":255782.0,"c":21781.0,"cd":234001.0,"g":128.0},{"d":"2026-06-03","dw":"ср","r":262986.0,"c":40420.0,"cd":222566.0,"g":104.0},{"d":"2026-06-04","dw":"чт","r":329165.0,"c":47803.0,"cd":281362.0,"g":156.0},{"d":"2026-06-05","dw":"пт","r":428581.0,"c":69415.0,"cd":359166.0,"g":184.0},{"d":"2026-06-06","dw":"сб","r":353703.0,"c":43500.0,"cd":310203.0,"g":134.0},{"d":"2026-06-07","dw":"вс","r":257943.0,"c":12010.0,"cd":245933.0,"g":112.0},{"d":"2026-06-08","dw":"пн","r":243014.0,"c":29950.0,"cd":213064.0,"g":109.0},{"d":"2026-06-09","dw":"вт","r":238632.0,"c":38111.0,"cd":200522.0,"g":120.0},{"d":"2026-06-10","dw":"ср","r":281401.0,"c":22591.0,"cd":258810.0,"g":131.0},{"d":"2026-06-11","dw":"чт","r":383397.0,"c":42844.0,"cd":340424.0,"g":149.0},{"d":"2026-06-12","dw":"пт","r":346795.0,"c":32734.0,"cd":314061.0,"g":210.0},{"d":"2026-06-13","dw":"сб","r":319436.0,"c":35170.0,"cd":284506.0,"g":142.0},{"d":"2026-06-14","dw":"вс","r":228519.0,"c":32708.0,"cd":195811.0,"g":112.0},{"d":"2026-06-15","dw":"пн","r":308982.0,"c":53963.0,"cd":255019.0,"g":149.0},{"d":"2026-06-16","dw":"вт","r":213240.0,"c":28018.0,"cd":185222.0,"g":112.0},{"d":"2026-06-17","dw":"ср","r":214444.0,"c":9418.0,"cd":205027.0,"g":98.0},{"d":"2026-06-18","dw":"чт","r":301136.0,"c":49877.0,"cd":251259.0,"g":135.0},{"d":"2026-06-19","dw":"пт","r":383864.0,"c":35031.0,"cd":348833.0,"g":178.0},{"d":"2026-06-20","dw":"сб","r":388649.0,"c":15067.0,"cd":372582.0,"g":138.0},{"d":"2026-06-21","dw":"вс","r":428056.0,"c":35542.0,"cd":392514.0,"g":226.0},{"d":"2026-06-22","dw":"пн","r":265879.0,"c":31767.0,"cd":234112.0,"g":128.0},{"d":"2026-06-23","dw":"вт","r":229191.0,"c":35457.0,"cd":193634.0,"g":92.0},{"d":"2026-06-24","dw":"ср","r":262082.0,"c":28694.0,"cd":233389.0,"g":156.0},{"d":"2026-06-25","dw":"чт","r":385477.0,"c":52513.0,"cd":332964.0,"g":129.0},{"d":"2026-06-26","dw":"пт","r":436027.0,"c":64840.0,"cd":371081.0,"g":183.0},{"d":"2026-06-27","dw":"сб","r":335020.0,"c":38407.0,"cd":296613.0,"g":144.0},{"d":"2026-06-28","dw":"вс","r":346077.0,"c":34171.0,"cd":230064.0,"g":74.0},{"d":"2026-06-29","dw":"пн","r":230451.0,"c":24007.0,"cd":206744.0,"g":118.0},{"d":"2026-06-30","dw":"вт","r":284118.0,"c":34170.0,"cd":249948.0,"g":127.0},{"d":"2026-07-01","dw":"ср","r":343898.0,"c":27918.0,"cd":316248.0,"g":120.0},{"d":"2026-07-02","dw":"чт","r":641639.0,"c":52600.0,"cd":589039.0,"g":237.0},{"d":"2026-07-03","dw":"пт","r":726331.0,"c":65700.0,"cd":660631.0,"g":223.0},{"d":"2026-07-04","dw":"сб","r":658728.0,"c":76793.0,"cd":581935.0,"g":208.0},{"d":"2026-07-05","dw":"вс","r":458166.0,"c":34815.0,"cd":423351.0,"g":168.0},{"d":"2026-07-06","dw":"пн","r":446564.0,"c":58631.0,"cd":387933.0,"g":174.0},{"d":"2026-07-07","dw":"вт","r":491135.0,"c":42494.0,"cd":448641.0,"g":160.0},{"d":"2026-07-08","dw":"ср","r":655698.0,"c":125132.0,"cd":530446.0,"g":233.0},{"d":"2026-07-09","dw":"чт","r":669039.0,"c":82152.0,"cd":586887.0,"g":267.0},{"d":"2026-07-10","dw":"пт","r":925647.0,"c":93610.0,"cd":832037.0,"g":350.0},{"d":"2026-07-11","dw":"сб","r":870510.0,"c":71456.0,"cd":799054.0,"g":267.0},{"d":"2026-07-12","dw":"вс","r":373095.0,"c":9814.0,"cd":366281.0,"g":151.0},{"d":"2026-07-13","dw":"пн","r":507038.0,"c":69447.0,"cd":437607.0,"g":196.0},{"d":"2026-07-14","dw":"вт","r":650328.0,"c":68212.0,"cd":582116.0,"g":197.0},{"d":"2026-07-15","dw":"ср","r":745887.0,"c":93421.0,"cd":651463.0,"g":219.0},{"d":"2026-07-16","dw":"чт","r":423862.0,"c":58024.0,"cd":365838.0,"g":143.0},{"d":"2026-07-17","dw":"пт","r":611332.0,"c":73811.0,"cd":537521.0,"g":193.0},{"d":"2026-07-18","dw":"сб","r":916562.0,"c":84879.0,"cd":831684.0,"g":223.0},{"d":"2026-07-19","dw":"вс","r":745568.0,"c":117730.0,"cd":627838.0,"g":310.0},{"d":"2026-07-20","dw":"пн","r":649688.0,"c":130463.0,"cd":519225.0,"g":234.0},{"d":"2026-07-21","dw":"вт","r":666240.0,"c":78378.0,"cd":587861.0,"g":256.0},{"d":"2026-07-22","dw":"ср","r":705539.0,"c":74004.0,"cd":631535.0,"g":227.0},{"d":"2026-07-23","dw":"чт","r":732696.0,"c":93474.0,"cd":639222.0,"g":221.0},{"d":"2026-07-24","dw":"пт","r":747487.0,"c":49103.0,"cd":698384.0,"g":235.0},{"d":"2026-07-25","dw":"сб","r":740427.0,"c":78749.0,"cd":661725.0,"g":292.0},{"d":"2026-07-26","dw":"вс","r":854384.0,"c":114745.0,"cd":739549.0,"g":194.0},{"d":"2026-07-27","dw":"пн","r":675345.0,"c":127323.0,"cd":553003.0,"g":151.0},{"d":"2026-07-28","dw":"вт","r":419404.0,"c":25266.0,"cd":394138.0,"g":298.0},{"d":"2026-07-29","dw":"ср","r":650128.0,"c":67625.0,"cd":582457.0,"g":207.0},{"d":"2026-07-30","dw":"чт","r":644278.0,"c":45854.0,"cd":588425.0,"g":225.0},{"d":"2026-07-31","dw":"пт","r":668543.0,"c":78202.0,"cd":590341.0,"g":242.0},{"d":"2026-08-01","dw":"сб","r":579044.0,"c":39298.0,"cd":539746.0,"g":190.0},{"d":"2026-08-02","dw":"вс","r":782957.0,"c":87356.0,"cd":695601.0,"g":243.0},{"d":"2026-08-03","dw":"пн","r":566044.0,"c":51377.0,"cd":514668.0,"g":221.0},{"d":"2026-08-04","dw":"вт","r":634528.0,"c":85488.0,"cd":549041.0,"g":208.0},{"d":"2026-08-05","dw":"ср","r":784288.0,"c":77375.0,"cd":706913.0,"g":264.0},{"d":"2026-08-06","dw":"чт","r":730395.0,"c":70248.0,"cd":660148.0,"g":246.0},{"d":"2026-08-07","dw":"пт","r":971488.0,"c":115302.0,"cd":856187.0,"g":292.0},{"d":"2026-08-08","dw":"сб","r":826481.0,"c":115164.0,"cd":711317.0,"g":209.0},{"d":"2026-08-09","dw":"вс","r":328765.0,"c":67547.0,"cd":261218.0,"g":111.0},{"d":"2026-08-10","dw":"пн","r":477318.0,"c":52245.0,"cd":425073.0,"g":179.0},{"d":"2026-08-11","dw":"вт","r":763536.0,"c":59441.0,"cd":704095.0,"g":240.0},{"d":"2026-08-12","dw":"ср","r":576587.0,"c":33996.0,"cd":542591.0,"g":171.0},{"d":"2026-08-13","dw":"чт","r":471623.0,"c":28586.0,"cd":443037.0,"g":158.0},{"d":"2026-08-14","dw":"пт","r":606307.0,"c":104995.0,"cd":501312.0,"g":172.0},{"d":"2026-08-15","dw":"сб","r":468784.0,"c":28483.0,"cd":440301.0,"g":124.0},{"d":"2026-08-16","dw":"вс","r":269171.0,"c":16500.0,"cd":252671.0,"g":110.0},{"d":"2026-08-17","dw":"пн","r":254433.0,"c":33786.0,"cd":220647.0,"g":125.0},{"d":"2026-08-18","dw":"вт","r":421094.0,"c":50649.0,"cd":370445.0,"g":162.0},{"d":"2026-08-19","dw":"ср","r":576587.0,"c":33996.0,"cd":542591.0,"g":124.0},{"d":"2026-08-20","dw":"чт","r":460493.0,"c":45985.0,"cd":414509.0,"g":161.0},{"d":"2026-08-21","dw":"пт","r":865924.0,"c":135599.0,"cd":730325.0,"g":206.0},{"d":"2026-08-22","dw":"сб","r":593308.0,"c":59989.0,"cd":533320.0,"g":261.0},{"d":"2026-08-23","dw":"вс","r":607515.0,"c":48856.0,"cd":558660.0,"g":258.0},{"d":"2026-08-24","dw":"пн","r":372012.0,"c":25175.0,"cd":346837.0,"g":139.0},{"d":"2026-08-25","dw":"вт","r":406044.0,"c":31827.0,"cd":374217.0,"g":143.0},{"d":"2026-08-26","dw":"ср","r":336541.0,"c":19211.0,"cd":317331.0,"g":111.0},{"d":"2026-08-27","dw":"чт","r":593578.0,"c":79962.0,"cd":513616.0,"g":213.0},{"d":"2026-08-28","dw":"пт","r":575686.0,"c":50734.0,"cd":524952.0,"g":122.0},{"d":"2026-08-29","dw":"сб","r":479971.0,"c":60304.0,"cd":419667.0,"g":129.0},{"d":"2026-08-30","dw":"вс","r":309689.0,"c":18726.0,"cd":290963.0,"g":101.0},{"d":"2026-08-31","dw":"пн","r":256194.0,"c":49157.0,"cd":207037.0,"g":107.0},{"d":"2026-09-01","dw":"вт","r":331994.0,"c":18848.0,"cd":310086.0,"ya":3060.0,"g":148.0,"dr":73054.0,"dg":40.0,"fx":245000.0},{"d":"2026-09-02","dw":"ср","r":494324.0,"c":44022.0,"cd":447662.0,"ya":2640.0,"g":166.0,"dr":78638.0,"dg":28.0,"fx":245000.0},{"d":"2026-09-03","dw":"чт","r":456431.0,"c":39831.0,"cd":416600.0,"ya":0.0,"g":176.0,"dr":67346.0,"dg":32.0,"fx":245000.0},{"d":"2026-09-04","dw":"пт","r":729999.0,"c":87261.0,"cd":638659.0,"ya":4080.0,"g":217.0,"dr":92818.0,"dg":46.0,"fx":245000.0},{"d":"2026-09-05","dw":"сб","r":367897.0,"c":76194.0,"cd":291703.0,"ya":0.0,"g":119.0,"dr":43096.0,"dg":18.0,"fx":245000.0},{"d":"2026-09-06","dw":"вс","r":244817.0,"c":15400.0,"cd":227267.0,"ya":2150.0,"g":80.0,"dr":27342.0,"dg":8.0,"fx":245000.0},{"d":"2026-09-07","dw":"пн","r":248023.0,"c":25965.0,"cd":218908.0,"ya":3150.0,"g":92.0,"dr":84972.0,"dg":29.0,"fx":245000.0},{"d":"2026-09-08","dw":"вт","r":350361.0,"c":68393.0,"cd":281968.0,"ya":0.0,"g":132.0,"dr":56095.0,"dg":18.0,"fx":245000.0},{"d":"2026-09-09","dw":"ср","r":359539.0,"c":63076.0,"cd":296463.0,"ya":0.0,"g":179.0,"dr":51865.0,"dg":32.0,"fx":245000.0},{"d":"2026-09-10","dw":"чт","r":354593.62,"c":41823.0,"cd":312770.62,"ya":0.0,"g":138.0,"dr":84432.0,"dg":41.0,"fx":245000.0},{"d":"2026-09-11","dw":"пт","r":570798.5,"c":39660.0,"cd":531138.5,"ya":0.0,"g":180.0,"dr":90378.0,"dg":44.0,"fx":245000.0},{"d":"2026-09-12","dw":"сб","r":476171.47,"c":48895.0,"cd":425306.0,"ya":1970.0,"g":131.0,"dr":56829.0,"dg":18.0,"fx":245000.0},{"d":"2026-09-13","dw":"вс","r":205106.5,"c":44719.5,"cd":160387.0,"ya":0.0,"g":63.0,"dr":39027.0,"dg":13.0,"fx":245000.0},{"d":"2026-09-14","dw":"пн","r":240524.5,"c":47469.0,"cd":193055.5,"ya":0.0,"g":83.0,"dr":70135.0,"dg":30.0,"fx":245000.0},{"d":"2026-09-15","dw":"вт","r":352345.0,"c":12245.0,"cd":340099.5,"ya":0.0,"g":92.0,"dr":59673.0,"dg":19.0,"fx":245000.0},{"d":"2026-09-16","dw":"ср","r":219246.5,"c":55868.5,"cd":163378.0,"ya":0.0,"g":80.0,"dr":53620.0,"dg":23.0,"fx":245000.0},{"d":"2026-09-17","dw":"чт","r":342900.0,"c":2800.0,"cd":339130.0,"ya":970.0,"g":117.0,"dr":72947.0,"dg":28.0,"fx":245000.0},{"d":"2026-09-18","dw":"пт","r":547824.0,"c":53937.0,"cd":493897.0,"ya":0.0,"g":158.0,"dr":86699.0,"dg":38.0,"fx":245000.0},{"d":"2026-09-19","dw":"сб","r":457441.0,"c":59357.0,"cd":398084.0,"ya":0.0,"g":137.0,"dr":149157.0,"dg":58.0,"fx":245000.0},{"d":"2026-09-20","dw":"вс","r":270108.0,"c":21625.0,"cd":246403.0,"ya":2080.0,"g":142.0,"dr":33240.0,"dg":17.0,"fx":245000.0},{"d":"2026-09-21","dw":"пн","r":302901.0,"c":26026.5,"cd":276874.5,"ya":0.0,"g":104.0,"dr":46657.5,"dg":16.0,"fx":245000.0},{"d":"2026-09-22","dw":"вт","r":340995.5,"c":43806.5,"cd":295249.0,"ya":1940.0,"g":101.0,"dr":87086.5,"dg":28.0,"fx":245000.0},{"d":"2026-09-23","dw":"ср","r":366063.5,"c":65157.0,"cd":299906.5,"ya":970.0,"g":122.0,"dr":85619.5,"dg":28.0,"fx":245000.0},{"d":"2026-09-24","dw":"чт","r":379268.0,"c":30142.0,"cd":349126.0,"ya":0.0,"g":126.0,"dr":82655.0,"dg":34.0,"fx":245000.0},{"d":"2026-09-25","dw":"пт","r":563594.0,"c":76768.0,"cd":486826.0,"ya":0.0,"g":202.0,"dr":66772.0,"dg":31.0,"fx":245000.0},{"d":"2026-09-26","dw":"сб","r":627365.5,"c":47534.5,"cd":577071.0,"ya":2760.0,"g":164.0,"dr":127324.0,"dg":39.0,"fx":245000.0},{"d":"2026-09-27","dw":"вс","r":258822.5,"c":35256.5,"cd":220656.0,"ya":2910.0,"g":97.0,"dr":63861.0,"dg":30.0,"fx":245000.0},{"d":"2026-09-28","dw":"пн","r":240445.5,"c":31880.5,"cd":208565.0,"ya":0.0,"g":80.0,"dr":81610.0,"dg":31.0,"fx":245000.0},{"d":"2026-09-29","dw":"вт","r":239345.5,"c":26633.5,"cd":210482.0,"ya":2230.0,"g":89.0,"dr":76669.5,"dg":30.0,"fx":245000.0},{"d":"2026-09-30","dw":"ср","r":287439.0,"c":33230.0,"cd":254209.0,"ya":0.0,"g":95.0,"dr":63987.5,"dg":28.0,"fx":245000.0},{"d":"2026-10-01","dw":"чт","rp":412500.0,"gp":150.0,"rpd":81675.0,"gpd":33.0,"r":254436.0,"c":29368.0,"cd":225068.0,"ya":0.0,"g":79.0,"dr":52082.0,"dg":25.0,"fx":245238.0},{"d":"2026-10-02","dw":"пт","rp":556200.0,"gp":180.0,"rpd":110128.0,"gpd":40.0,"r":393517.0,"c":103823.0,"cd":289694.0,"ya":0.0,"g":116.0,"dr":57719.0,"dg":22.0,"fx":254408.0},{"d":"2026-10-03","dw":"сб","rp":537850.0,"gp":155.0,"rpd":106494.0,"gpd":34.0,"r":422048.0,"c":33274.0,"cd":386563.0,"ya":2210.0,"g":114.0,"dr":24424.0,"dg":8.0,"fx":251228.0},{"d":"2026-10-04","dw":"вс","rp":275000.0,"gp":100.0,"rpd":54450.0,"gpd":22.0,"r":287439.0,"c":33230.0,"cd":254209.0,"ya":0.0,"g":95.0,"dr":63987.5,"dg":28.0,"fx":236788.0},{"d":"2026-10-05","dw":"пн","rp":295000.0,"gp":100.0,"rpd":58410.0,"gpd":22.0,"fx":243138.0},{"d":"2026-10-06","dw":"вт","rp":392600.0,"gp":130.0,"rpd":77735.0,"gpd":29.0,"fx":244638.0},{"d":"2026-10-07","dw":"ср","rp":378000.0,"gp":140.0,"rpd":74844.0,"gpd":31.0,"fx":243138.0},{"d":"2026-10-08","dw":"чт","rp":440000.0,"gp":160.0,"rpd":87120.0,"gpd":35.0,"fx":245238.0},{"d":"2026-10-09","dw":"пт","rp":587100.0,"gp":190.0,"rpd":116246.0,"gpd":42.0,"fx":254408.0},{"d":"2026-10-10","dw":"сб","rp":572550.0,"gp":165.0,"rpd":113365.0,"gpd":36.0,"fx":251228.0},{"d":"2026-10-11","dw":"вс","rp":302500.0,"gp":110.0,"rpd":59895.0,"gpd":24.0,"fx":236788.0},{"d":"2026-10-12","dw":"пн","rp":324500.0,"gp":110.0,"rpd":64251.0,"gpd":24.0,"fx":243138.0},{"d":"2026-10-13","dw":"вт","rp":422800.0,"gp":140.0,"rpd":83714.0,"gpd":31.0,"fx":244638.0},{"d":"2026-10-14","dw":"ср","rp":405000.0,"gp":150.0,"rpd":80190.0,"gpd":33.0,"fx":243138.0},{"d":"2026-10-15","dw":"чт","rp":467500.0,"gp":170.0,"rpd":92565.0,"gpd":37.0,"fx":245238.0},{"d":"2026-10-16","dw":"пт","rp":618000.0,"gp":200.0,"rpd":122364.0,"gpd":44.0,"fx":254408.0},{"d":"2026-10-17","dw":"сб","rp":607250.0,"gp":175.0,"rpd":120236.0,"gpd":39.0,"fx":251228.0},{"d":"2026-10-18","dw":"вс","rp":330000.0,"gp":120.0,"rpd":65340.0,"gpd":26.0,"fx":236788.0},{"d":"2026-10-19","dw":"пн","rp":354000.0,"gp":120.0,"rpd":70092.0,"gpd":26.0,"fx":243138.0},{"d":"2026-10-20","dw":"вт","rp":453000.0,"gp":150.0,"rpd":89694.0,"gpd":33.0,"fx":244638.0},{"d":"2026-10-21","dw":"ср","rp":432000.0,"gp":160.0,"rpd":85536.0,"gpd":35.0,"fx":239358.0},{"d":"2026-10-22","dw":"чт","rp":495000.0,"gp":180.0,"rpd":98010.0,"gpd":40.0,"fx":241458.0},{"d":"2026-10-23","dw":"пт","rp":648900.0,"gp":210.0,"rpd":128482.0,"gpd":46.0,"fx":254408.0},{"d":"2026-10-24","dw":"сб","rp":641950.0,"gp":185.0,"rpd":127106.0,"gpd":41.0,"fx":251228.0},{"d":"2026-10-25","dw":"вс","rp":357500.0,"gp":130.0,"rpd":70785.0,"gpd":29.0,"fx":237388.0},{"d":"2026-10-26","dw":"пн","rp":383500.0,"gp":130.0,"rpd":75933.0,"gpd":29.0,"fx":243138.0},{"d":"2026-10-27","dw":"вт","rp":483200.0,"gp":160.0,"rpd":95674.0,"gpd":35.0,"fx":244638.0},{"d":"2026-10-28","dw":"ср","rp":459000.0,"gp":170.0,"rpd":90882.0,"gpd":37.0,"fx":243138.0},{"d":"2026-10-29","dw":"чт","rp":522500.0,"gp":190.0,"rpd":103455.0,"gpd":42.0,"fx":245238.0},{"d":"2026-10-30","dw":"пт","rp":679800.0,"gp":220.0,"rpd":134600.0,"gpd":48.0,"fx":254408.0},{"d":"2026-10-31","dw":"сб","rp":676650.0,"gp":195.0,"rpd":133977.0,"gpd":43.0,"fx":251228.0}];
+
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+const normH = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[\s ]+/g, ' ').trim();
+function toNum(v) {
+  if (v == null) return null;
+  let s = String(v).replace(/[\s  ]/g, '').replace(/₽|руб\.?|р\./gi, '');
+  if (s === '' || s === '-' || /^#/.test(s)) return null;
+  if (s.includes(',') && s.includes('.')) s = s.replace(/,/g, '');   // 1,234.56
+  else s = s.replace(',', '.');                                        // 1234,56
+  const x = Number(s); return isFinite(x) ? Math.round(x * 100) / 100 : null;
+}
+function toDate(v) {
+  const s = String(v || '').trim(); let m;
+  if ((m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/))) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return `${m[3]}-${pad(m[1])}-${pad(m[2])}`;
+  if ((m = s.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})/))) return `${m[1]}-${pad(+m[2] + 1)}-${pad(m[3])}`;
+  return null;
+}
+// столбцы ищутся по названию во 2-й строке шапки; если не нашли — по букве как в исходной таблице
+const COLS = {
+  fx: ['тех столбец с/с', 0], d: ['дата', 3],
+  rp: ['выручка план', 5], gp: ['кол-во гостей план', 6], rpd: ['выручка план день', 8], gpd: ['кол-во гостей план день', 9],
+  r: ['выручка общая', 11], c: ['выручка нал', 12], cd: ['выручка безнал', 13], ya: ['выручка яндекс еда', 14], g: ['кол-во гостей', 15],
+  dr: ['дневная выручка', 17], dg: ['дневное кол-во гостей', 18],
+};
+function rowsFromCSV(text) {
+  const t = parseCSV(text);
+  const hi = t.findIndex(r => r.some(c => normH(c) === 'дата'));
+  if (hi < 0) throw new Error('в таблице не найден заголовок «Дата»');
+  const head = t[hi].map(normH);
+  const idx = {}; for (const k in COLS) { const j = head.indexOf(COLS[k][0]); idx[k] = j >= 0 ? j : COLS[k][1]; }
+  const DWS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  const out = [];
+  for (const r of t.slice(hi + 1)) {
+    const d = toDate(r[idx.d]); if (!d) continue;
+    const o = { d, dw: DWS[fromISO(d).getDay()] };
+    for (const k in COLS) if (k !== 'd') { const v = toNum(r[idx[k]]); if (v != null) o[k] = v; }
+    out.push(o);
+  }
+  if (!out.length) throw new Error('в таблице нет строк с датами');
+  return out;
+}
+async function loadSheet() {
+  let lastErr;
+  for (const u of SHEET_URLS) {
+    try {
+      const res = await fetch(u + '&_=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (/^\s*</.test(text)) throw new Error('таблица не опубликована / нет доступа');
+      return rowsFromCSV(text);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+let ALL, BY_DATE, MONTHS, LAST_FACT, FACT_WEEKS;
+function setData(raw) {
+  ALL = raw.map(r => ({ ...r, ym: r.d.slice(0, 7), day: +r.d.slice(8, 10), wk: mondayOf(r.d), hasFact: r.r != null, wkend: WEEKEND.includes(r.dw) }));
+  BY_DATE = Object.fromEntries(ALL.map(r => [r.d, r]));
+  MONTHS = [...new Set(ALL.map(r => r.ym))].sort();
+  LAST_FACT = ALL.filter(r => r.hasFact).map(r => r.d).sort().pop();
+  FACT_WEEKS = [...new Set(ALL.filter(r => r.hasFact).map(r => r.wk))].sort();
+  FIRST_FACT = ALL.filter(r => r.hasFact).map(r => r.d).sort()[0];
+  if (!currentMonth || !MONTHS.includes(currentMonth)) currentMonth = LAST_FACT ? LAST_FACT.slice(0, 7) : MONTHS[MONTHS.length - 1];
+  if (!curWeek || !FACT_WEEKS.includes(curWeek)) curWeek = FACT_WEEKS[FACT_WEEKS.length - 1];
+  if (!yoyWeek) yoyWeek = curWeek;
+}
+
+const COS_VAR_SHARE = 0.5;                 // С/С открытия = выручка × 50% + тех. столбец
+const WEEKEND = ['пт', 'сб'];               // выходные
+const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'вс'];
+const LUNCH_LABEL = 'до 17:00 вс–чт · до 19:00 пт–сб';
+
+const M = ['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const MS = ['', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+const DOW_ORDER = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+const DOW_FULL = { 'пн': 'Понедельник', 'вт': 'Вторник', 'ср': 'Среда', 'чт': 'Четверг', 'пт': 'Пятница', 'сб': 'Суббота', 'вс': 'Воскресенье' };
+
+// ── даты ──
+const pad = x => String(x).padStart(2, '0');
+const toISO = dt => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, k) => { const d = fromISO(s); d.setDate(d.getDate() + k); return toISO(d); };
+const mondayOf = s => { const d = fromISO(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return toISO(d); };
+const ddmm = s => s.slice(8, 10) + '.' + s.slice(5, 7);
+function isoWeek(s) { const d = fromISO(s); d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7)); const w1 = new Date(d.getFullYear(), 0, 4); return 1 + Math.round(((d - w1) / 864e5 - 3 + ((w1.getDay() + 6) % 7)) / 7); }
+const weekLabel = mon => `${ddmm(mon)}–${ddmm(addDays(mon, 6))} · нед. ${isoWeek(mon)}`;
+
+
+
+
+
+
+
+// ── форматирование ──
+function n(v, dec = 0) { if (v == null || isNaN(v)) return '—'; return v.toLocaleString('ru-RU', { maximumFractionDigits: dec }); }
+function nm(v) {
+  if (v == null || isNaN(v)) return '—';
+  if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2).replace('.', ',') + ' млн';
+  if (Math.abs(v) >= 1e3) return Math.round(v / 1e3) + ' тыс';
+  return n(v);
+}
+const sg = v => v >= 0 ? '+' : '';
+const f1 = v => v.toFixed(1).replace('.', ',');
+function pct(a, b) { if (a == null || !b) return null; return a / b * 100; }
+function progColor(p) { if (p == null) return '#94a3b8'; if (p >= 100) return '#16a34a'; if (p >= 80) return '#d97706'; return '#dc2626'; }
+function deltaTag(d, unit = '') {
+  if (d == null || isNaN(d)) return '<span class="fr-na">—</span>';
+  return `<span class="${d >= 0 ? 'fr-pos' : 'fr-neg'}">${sg(d)}${n(Math.round(d))}${unit} ${d >= 0 ? '▲' : '▼'}</span>`;
+}
+function pctTag(p, pp = false) {
+  if (p == null || isNaN(p) || !isFinite(p)) return '<span class="fr-na">—</span>';
+  return `<span class="${p >= 0 ? 'fr-pos' : 'fr-neg'}">${sg(p)}${f1(p)}${pp ? ' п.п.' : '%'}</span>`;
+}
+const rowsOf = ym => ALL.filter(r => r.ym === ym).sort((a, b) => a.d.localeCompare(b.d));
+const prevYm = ym => { const i = MONTHS.indexOf(ym); return i > 0 ? MONTHS[i - 1] : null; };
+
+// ── агрегаты по набору дней ──
+function agg(rows) {
+  const f = rows.filter(r => r.hasFact);
+  const s = (arr, k) => arr.reduce((a, r) => a + (r[k] || 0), 0);
+  const p = rows.filter(r => r.rp != null);
+  const fd = f.filter(r => r.dr != null);                       // дни с дневной выручкой
+  const fxRows = f.filter(r => r.fx != null);
+  const o = {
+    days: rows.length, factDays: f.length, planDays: p.length,
+    rev: f.length ? s(f, 'r') : null, guests: f.length ? s(f, 'g') : null,
+    dayDays: fd.length, dayRev: fd.length ? s(fd, 'dr') : null, dayG: fd.length ? s(fd, 'dg') : null, dayFactRev: s(fd, 'r'), dayFactG: s(fd, 'g'),
+    rev_plan: p.length ? s(p, 'rp') : null, guests_plan: p.length ? s(p, 'gp') : null,
+    rev_plan_day: p.length ? s(p, 'rpd') : null, guests_plan_day: p.length ? s(p, 'gpd') : null,
+    // план на прошедшие дни (для «на сегодня»)
+    rpPast: s(f, 'rp'), gpPast: s(f, 'gp'), rpdPast: s(fd, 'rpd'), gpdPast: s(fd, 'gpd'),
+    res: fxRows.length ? fxRows.reduce((a, r) => a + (r.r - (r.r * COS_VAR_SHARE + r.fx)), 0) : null,
+    res_plan: p.some(r => r.fx != null) ? p.filter(r => r.fx != null).reduce((a, r) => a + (r.rp - (r.rp * COS_VAR_SHARE + r.fx)), 0) : null,
+  };
+  o.check = o.guests ? o.rev / o.guests : null;
+  o.check_plan = o.guests_plan ? o.rev_plan / o.guests_plan : null;
+  o.revPerDay = o.factDays ? o.rev / o.factDays : null;
+  o.guestsPerDay = o.factDays ? o.guests / o.factDays : null;
+  o.dayCheck = o.dayG ? o.dayRev / o.dayG : null;
+  o.dayCheck_plan = o.guests_plan_day ? o.rev_plan_day / o.guests_plan_day : null;
+  o.dayShare = o.dayDays && o.dayFactRev ? o.dayRev / o.dayFactRev * 100 : null;
+  o.eveRev = o.dayDays ? o.dayFactRev - o.dayRev : null;
+  o.eveG = o.dayDays ? o.dayFactG - o.dayG : null;
+  o.eveCheck = o.eveG ? o.eveRev / o.eveG : null;
+  // % плана — только по дням, где план задан
+  const fp = f.filter(r => r.rp != null), fdp = fd.filter(r => r.rpd != null);
+  o.planPct = fp.length ? s(fp, 'r') / s(fp, 'rp') * 100 : null;
+  o.dayPlanPct = fdp.length ? s(fdp, 'dr') / s(fdp, 'rpd') * 100 : null;
+  o.planCover = fp.length;
+  return o;
+}
+
+// показатели для сравнительных таблиц (только факт)
+const CMP_METRICS = [
+  { k: 'rev',    label: 'Выручка',              unit: ' ₽', f: a => a.rev },
+  { k: 'guests', label: 'Гости',                unit: '',   f: a => a.guests },
+  { k: 'check',  label: 'Средний чек',          unit: ' ₽', f: a => a.check },
+  { k: 'rpd',    label: 'Выручка в среднем за день', unit: ' ₽', f: a => a.revPerDay },
+  { k: 'lunch',  label: 'Выручка днём (обед)',  unit: ' ₽', f: a => a.dayRev, lunch: true },
+  { k: 'lunchG', label: 'Гости днём',           unit: '',   f: a => a.dayG, lunch: true },
+  { k: 'lunchC', label: 'Чек днём',             unit: ' ₽', f: a => a.dayCheck, lunch: true },
+  { k: 'share',  label: 'Доля обеда в выручке', unit: '%',  f: a => a.dayShare, pp: true, lunch: true },
+  { k: 'plan',   label: 'Выполнение общего плана', unit: '%', f: a => a.planPct, pp: true },
+  { k: 'dplan',  label: 'Выполнение дневного плана', unit: '%', f: a => a.dayPlanPct, pp: true, lunch: true },
+];
+const fmtCmp = (v, m) => v == null ? '—' : m.pp ? f1(v) + '%' : n(Math.round(v)) + m.unit;
+const chgCmp = (a, b, m) => (a == null || b == null) ? null : m.pp ? a - b : (b ? (a / b - 1) * 100 : null);
+
+// ══════════════════════════════════════════════
+//  STATE / TABS
+// ══════════════════════════════════════════════
+let currentTab = 1;
+let currentMonth = null;
+let filterDows = new Set(), filterDateFrom = null, filterDateTo = null;
+let charts = {};
+let dynMode = 'week', dMetric = 'rev', dDayFrom = null, dDayTo = null;
+let curWeek = null;
+let wMetric = 'rev';
+let yoyMode = 'month', yoyMetric = 'rev', yoyWeek = null;
+
+function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
+function switchTab(t) {
+  currentTab = t;
+  [1, 2, 3].forEach(i => document.getElementById('tab-btn-' + i).classList.toggle('active', i === t));
+  document.getElementById('tab1-selectors').style.display = t === 1 ? 'flex' : 'none';
+  render();
+  window.scrollTo(0, 0);
+}
+function render() { destroyCharts(); if (currentTab === 1) renderMonth(); else if (currentTab === 2) renderDyn(); else renderYoY(); }
+
+function initSelectors() {
+  const sel = document.getElementById('month-select');
+  sel.innerHTML = '';
+  [...MONTHS].reverse().forEach(ym => {
+    const o = document.createElement('option');
+    const hasFact = ALL.some(r => r.ym === ym && r.hasFact);
+    o.value = ym; o.textContent = M[+ym.slice(5)] + ' ' + ym.slice(0, 4) + (hasFact ? '' : ' · план');
+    sel.appendChild(o);
+  });
+  sel.value = currentMonth;
+  sel.onchange = e => { currentMonth = e.target.value; filterDows.clear(); filterDateFrom = filterDateTo = null; render(); };
+}
+
+// ── графики ──
+const tickRub = v => Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'М' : Math.abs(v) >= 1e3 ? (v / 1e3).toFixed(0) + 'К' : v;
+const commonOpts = (unit, rub, extra = {}) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true, labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+    tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.raw != null ? Math.round(c.raw).toLocaleString('ru-RU') + unit : 'нет данных') } }
+  },
+  scales: {
+    x: { stacked: !!extra.stacked, ticks: { font: { size: 9 }, maxRotation: 45, color: '#64748b' }, grid: { display: false } },
+    y: { stacked: !!extra.stacked, ticks: { font: { size: 9 }, color: '#94a3b8', callback: rub ? tickRub : v => v }, grid: { color: '#f1f5f9' } }
+  }
+});
+const refLine = (label, data, color = '#475569') => ({ label, data, type: 'line', borderColor: color, borderDash: [5, 3], borderWidth: 1.5, pointRadius: 2, pointBackgroundColor: color, fill: false, tension: 0.1, order: 1 });
+const pctLabelsPlugin = (vals, pp) => ({ id: 'pctLabels', afterDatasetsDraw(ch) {
+  const ctx = ch.ctx; ctx.save(); ctx.font = '700 11px -apple-system, Segoe UI, sans-serif'; ctx.textAlign = 'center';
+  ch.getDatasetMeta(ch.data.datasets.length - 1).data.forEach((b, i) => { const p = vals[i]; if (p == null) return; ctx.fillStyle = p >= 0 ? '#16a34a' : '#dc2626'; ctx.fillText(sg(p) + p.toFixed(1) + (pp ? ' п.п.' : '%'), b.x, Math.min(b.y, b.base ?? b.y) - 6); });
+  ctx.restore(); } });
+
+function secHead(title, sub, color) {
+  return `<div class="sec-head"><div class="sec-bar" style="background:${color}"></div><div><div class="sec-title">${title}</div>${sub ? `<div class="sec-sub">${sub}</div>` : ''}</div></div>`;
+}
+function planBar(label, fact, plan, accent, planPast) {
+  const p = pct(fact || 0, plan) ?? 0;
+  const pace = planPast ? pct(fact || 0, planPast) : null;
+  const mark = planPast ? Math.min(planPast / plan * 100, 100) : null;
+  const col = progColor(pace ?? p);
+  return `<div class="pbar"><div class="pbar-head"><span class="pbar-label"><span class="legend-dot" style="background:${accent}"></span>${label}</span>
+    <span class="pbar-nums"><b>${n(Math.round(fact || 0))}</b> из ${n(plan)} ₽ · месяц <b>${p.toFixed(1)}%</b>${pace != null ? ` · к плану на сегодня <b style="color:${col}">${pace.toFixed(1)}%</b>` : ''}</span></div>
+    <div class="progress-wrap"><div class="progress-fill" style="width:${Math.min(p, 100)}%;background:${col}"></div>${mark != null ? `<div class="pbar-mark" style="left:${mark}%" title="план на сегодня: ${n(Math.round(planPast))} ₽"></div>` : ''}</div></div>`;
+}
+
+// ══════════════════════════════════════════════
+//  TAB 1 — МЕСЯЦ
+// ══════════════════════════════════════════════
+function kpi({ label, fact, ref, refLabel, unit = '', mode = 'plan', note = '', cls = '' }) {
+  const p = (ref != null && ref > 0 && fact != null && fact >= 0) ? pct(fact, ref) : null;
+  let pill = '';
+  if (p != null && mode !== 'none') {
+    if (mode === 'plan') pill = `<span class="kpi-delta ${p >= 100 ? 'delta-pos' : p >= 80 ? 'delta-neu' : 'delta-neg'}">${p.toFixed(1)}%</span>`;
+    else pill = `<span class="kpi-delta ${p >= 100 ? 'delta-pos' : 'delta-neg'}">${sg(p - 100)}${(p - 100).toFixed(1)}%</span>`;
+  }
+  const d = (fact != null && ref != null) ? fact - ref : null;
+  return `<div class="kpi-card ${cls}">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-fact">${fact != null ? n(Math.round(fact)) : '—'}<span style="font-size:13px;font-weight:400;color:var(--text-3)"> ${unit}</span></div>
+    ${ref != null ? `<div class="kpi-row"><span class="kpi-plan">${refLabel} ${n(Math.round(ref))}${unit}</span>${pill}</div>` : ''}
+    ${d != null && Math.round(d) !== 0 ? `<div style="font-size:11px;color:${d >= 0 ? 'var(--green)' : 'var(--red)'};margin-top:2px;font-weight:600">${sg(d)}${n(Math.round(d))}${unit}</div>` : ''}
+    ${mode === 'plan' && p != null ? `<div class="kpi-mini-bar"><div class="kpi-mini-fill" style="width:${Math.min(p, 100)}%;background:${progColor(p)}"></div></div>` : ''}
+    ${note ? `<div class="kpi-note">${note}</div>` : ''}
+  </div>`;
+}
+
+function renderMonth() {
+  const events = rowsOf(currentMonth);
+  const [year, mon] = currentMonth.split('-');
+  const A = agg(events);
+  const hasPlan = A.planDays > 0;
+  const hasDayPlan = !!A.rev_plan_day;
+  const withFact = events.filter(r => r.hasFact), withoutFact = events.filter(r => !r.hasFact);
+  const status = withFact.length === 0 ? 'plan' : (withoutFact.length ? 'open' : 'closed');
+  const lastDay = withFact.length ? Math.max(...withFact.map(r => r.day)) : 0;
+  const pym = prevYm(currentMonth);
+  const P = pym ? agg(rowsOf(pym).filter(r => r.day <= (lastDay || 31))) : null;
+  const mode = hasPlan ? 'plan' : 'mom';
+  const momL = P ? `${MS[+pym.slice(5)].toLowerCase()} 1–${lastDay}:` : '';
+
+  let html = '';
+  // ── ШАПКА ──
+  const badge = status === 'closed' ? '<span class="status-badge badge-closed">✓ Закрыт</span>'
+    : status === 'open' ? '<span class="status-badge badge-open">● В процессе</span>' : '<span class="status-badge badge-plan">◇ Только план</span>';
+  let right = '';
+  if (hasPlan && status !== 'plan') {
+    const pace = pct(A.rev, A.rpPast);
+    right = `<div class="rev-pct-big" style="color:${progColor(pace)}">${pace != null ? pace.toFixed(1) + '%' : '—'}</div><div class="rev-pct-sub">${status === 'open' ? 'общий план на сегодня' : 'выполнение общего плана'}</div>`;
+  } else if (!hasPlan && P && P.rev) {
+    const mp = (A.rev / P.rev - 1) * 100;
+    right = `<div class="rev-pct-big" style="color:${mp >= 0 ? 'var(--green)' : 'var(--red)'}">${sg(mp)}${mp.toFixed(1)}%</div><div class="rev-pct-sub">к ${M[+pym.slice(5)].toLowerCase()}у за 1–${lastDay} число · плана нет</div>`;
+  }
+
+  // ═══ РАЗДЕЛ «ВЕСЬ ДЕНЬ» ═══
+  html += secHead('Весь день', hasPlan ? 'выполнение общего плана, гости и средний чек' : 'план на месяц не задан — сравнение с прошлым месяцем за те же числа', 'var(--primary)');
+  html += `<div class="revenue-block">
+    <div class="rev-top">
+      <div><div class="rev-title">${status === 'plan' ? 'План выручки' : 'Выручка'} — ${M[+mon]} ${year}</div>
+        <div class="rev-fact">${status === 'plan' ? n(A.rev_plan) : n(A.rev)} <span>₽</span></div></div>
+      <div class="rev-right">${badge}${right}</div>
+    </div>
+    ${hasPlan ? planBar('Общий план', A.rev, A.rev_plan, 'var(--primary)', status === 'plan' ? null : A.rpPast) : ''}
+    ${hasPlan && withFact.length ? '<div class="pbar-legend">▮ метка — где должна быть выручка по плану на прошедшие дни; цвет полосы — выполнение плана на сегодня</div>' : ''}
+    <div class="rev-meta">
+      <div class="rev-meta-item"><span class="rev-meta-label">план месяца</span><span class="rev-meta-val">${hasPlan ? n(A.rev_plan) + ' ₽' : 'не задан'}</span></div>
+      ${hasPlan && status !== 'plan' ? `<div class="rev-meta-item"><span class="rev-meta-label">${A.rev >= A.rpPast ? 'опережение плана на сегодня' : 'отставание от плана на сегодня'}</span><span class="rev-meta-val ${A.rev >= A.rpPast ? 'green' : 'red'}">${sg(A.rev - A.rpPast)}${n(Math.round(A.rev - A.rpPast))} ₽</span></div>` : ''}
+      <div class="rev-meta-item"><span class="rev-meta-label">дней с данными</span><span class="rev-meta-val">${withFact.length} из ${events.length}</span></div>
+      <div class="rev-meta-item"><span class="rev-meta-label">выручка в день</span><span class="rev-meta-val">${A.revPerDay != null ? n(Math.round(A.revPerDay)) + ' ₽' : '—'}</span></div>
+    </div>
+  </div>`;
+
+  if (status !== 'plan') {
+    const resForecast = hasPlan ? (A.res || 0) + withoutFact.filter(r => r.rp != null && r.fx != null).reduce((a, r) => a + (r.rp - (r.rp * COS_VAR_SHARE + r.fx)), 0) : A.res;
+    html += `<div class="kpi-grid">
+      ${kpi({ label: 'Гости', fact: A.guests, ref: hasPlan ? A.gpPast : P?.guests, refLabel: hasPlan ? 'план на сегодня' : momL, unit: ' чел', mode, cls: 'all', note: hasPlan ? `план месяца ${n(A.guests_plan)} · выполнено ${pct(A.guests, A.guests_plan).toFixed(1)}%` : '' })}
+      ${kpi({ label: 'Средний чек', fact: A.check, ref: hasPlan ? A.check_plan : P?.check, refLabel: hasPlan ? 'план' : momL, unit: ' ₽', mode, cls: 'all' })}
+      ${kpi({ label: 'Выручка в день', fact: A.revPerDay, ref: hasPlan ? A.rpPast / A.factDays : P?.revPerDay, refLabel: hasPlan ? 'план' : momL, unit: ' ₽', mode, cls: 'all' })}
+      ${resForecast != null ? kpi({ label: hasPlan ? 'Прогноз: выручка − С/С открытия' : 'Выручка − С/С открытия', fact: resForecast, ref: hasPlan ? A.res_plan : null, refLabel: 'план', unit: ' ₽', mode: 'none', cls: 'all', note: (hasPlan ? 'факт + план на оставшиеся дни' : `за ${A.factDays} дн.`) + ' · С/С = 50% выручки + тех. столбец' })
+        : `<div class="kpi-card all"><div class="kpi-label">Выручка − С/С открытия</div><div class="kpi-fact" style="color:var(--text-3)">—</div><div class="kpi-note">тех. столбец с/с заполняется с сентября</div></div>`}
+    </div>`;
+  }
+
+  if (status !== 'closed') {
+    const remDays = withoutFact.length;
+    if (hasPlan) {
+      const remRev = A.rev_plan - (A.rev || 0);
+      html += `<div class="remaining-block">
+        <div class="remaining-item"><div class="remaining-label">Осталось до плана</div><div class="remaining-val">${n(Math.round(remRev))} ₽</div><div class="remaining-sub">из ${n(A.rev_plan)} ₽</div></div>
+        <div class="remaining-divider"></div>
+        <div class="remaining-item"><div class="remaining-label">Осталось дней</div><div class="remaining-val">${remDays}</div><div class="remaining-sub">без данных</div></div>
+        <div class="remaining-divider"></div>
+        <div class="remaining-item"><div class="remaining-label">Нужно в среднем</div><div class="remaining-val">${remDays ? n(Math.round(remRev / remDays)) : '—'} ₽</div><div class="remaining-sub">на каждый оставшийся день</div></div>
+        <div class="remaining-divider"></div>
+        <div class="remaining-item"><div class="remaining-label">Текущий темп</div><div class="remaining-val">${A.revPerDay != null ? n(Math.round(A.revPerDay)) + ' ₽' : '—'}</div><div class="remaining-sub">${A.revPerDay != null ? 'средняя выручка в день' : 'факта пока нет'}</div></div>
+      </div>`;
+    } else if (A.revPerDay != null) {
+      const fc = A.rev + A.revPerDay * remDays;
+      const prevFull = pym ? agg(rowsOf(pym)).rev : null;
+      html += `<div class="remaining-block">
+        <div class="remaining-item"><div class="remaining-label">Прогноз месяца по темпу</div><div class="remaining-val">${n(Math.round(fc))} ₽</div><div class="remaining-sub">факт + ${n(Math.round(A.revPerDay))} ₽ × ${remDays} дн.</div></div>
+        <div class="remaining-divider"></div>
+        <div class="remaining-item"><div class="remaining-label">Осталось дней</div><div class="remaining-val">${remDays}</div><div class="remaining-sub">без данных</div></div>
+        <div class="remaining-divider"></div>
+        <div class="remaining-item"><div class="remaining-label">Прошлый месяц целиком</div><div class="remaining-val">${prevFull != null ? n(Math.round(prevFull)) + ' ₽' : '—'}</div><div class="remaining-sub">${prevFull ? 'прогноз ' + sg(fc / prevFull - 1) + ((fc / prevFull - 1) * 100).toFixed(1) + '% м/м' : ''}</div></div>
+      </div>`;
+    }
+  }
+
+  html += `<div class="charts-grid">
+    <div class="chart-card"><h3>Выручка по дням ${hasPlan ? '— факт / план' : '— факт / среднее'}</h3><div class="chart-wrap"><canvas id="chart-rev"></canvas></div></div>
+    <div class="chart-card"><h3>Гости ${hasPlan ? '— факт / план' : '— факт / среднее'}</h3><div class="chart-wrap"><canvas id="chart-guests"></canvas></div></div>
+    <div class="chart-card"><h3>Средний чек ${hasPlan ? '— факт / план' : '— факт / за месяц'}</h3><div class="chart-wrap"><canvas id="chart-check"></canvas></div></div>
+  </div>`;
+
+  // ═══ РАЗДЕЛ «ОБЕД» ═══
+  const showLunch = A.dayDays > 0 || hasDayPlan;
+  if (showLunch) {
+    html += secHead('Обед · дневная выручка', LUNCH_LABEL + (hasDayPlan ? ' · выполнение дневного плана' : ' · дневной план на месяц не задан'), 'var(--day)');
+    if (hasDayPlan) {
+      html += `<div class="lunch-block">
+        ${planBar('Дневной план', A.dayRev || 0, A.rev_plan_day, 'var(--day)', A.dayDays ? A.rpdPast : null)}
+        <div class="rev-meta" style="margin-top:8px">
+          <div class="rev-meta-item"><span class="rev-meta-label">дневной план месяца</span><span class="rev-meta-val">${n(A.rev_plan_day)} ₽</span></div>
+          <div class="rev-meta-item"><span class="rev-meta-label">доля в общем плане</span><span class="rev-meta-val">${(A.rev_plan_day / A.rev_plan * 100).toFixed(1)}%</span></div>
+          ${A.dayDays ? `<div class="rev-meta-item"><span class="rev-meta-label">${A.dayRev >= A.rpdPast ? 'опережение на сегодня' : 'отставание на сегодня'}</span><span class="rev-meta-val ${A.dayRev >= A.rpdPast ? 'green' : 'red'}">${sg(A.dayRev - A.rpdPast)}${n(Math.round(A.dayRev - A.rpdPast))} ₽</span></div>
+          <div class="rev-meta-item"><span class="rev-meta-label">нужно днём в среднем</span><span class="rev-meta-val">${withoutFact.length ? n(Math.round((A.rev_plan_day - A.dayRev) / withoutFact.length)) + ' ₽' : '—'}</span></div>` : ''}
+        </div>
+      </div>`;
+    }
+    if (A.dayDays) {
+      html += `<div class="kpi-grid">
+        ${kpi({ label: 'Выручка днём', fact: A.dayRev, ref: hasDayPlan ? A.rpdPast : P?.dayRev, refLabel: hasDayPlan ? 'план на сегодня' : momL, unit: ' ₽', mode: hasDayPlan ? 'plan' : 'mom', cls: 'lunch' })}
+        ${kpi({ label: 'Гости днём', fact: A.dayG, ref: hasDayPlan ? A.gpdPast : P?.dayG, refLabel: hasDayPlan ? 'план на сегодня' : momL, unit: ' чел', mode: hasDayPlan ? 'plan' : 'mom', cls: 'lunch' })}
+        ${kpi({ label: 'Чек днём', fact: A.dayCheck, ref: hasDayPlan ? A.dayCheck_plan : P?.dayCheck, refLabel: hasDayPlan ? 'план' : momL, unit: ' ₽', mode: hasDayPlan ? 'plan' : 'mom', cls: 'lunch', note: A.eveCheck ? `чек вечером ${n(Math.round(A.eveCheck))} ₽` : '' })}
+        <div class="kpi-card lunch"><div class="kpi-label">Доля обеда в выручке</div>
+          <div class="kpi-fact">${f1(A.dayShare)}<span style="font-size:13px;font-weight:400;color:var(--text-3)"> %</span></div>
+          <div class="stack-bar" style="margin:10px 0 6px"><div style="width:${A.dayShare}%;background:var(--day)"></div><div style="width:${100 - A.dayShare}%;background:#312e81"></div></div>
+          <div class="kpi-note">днём ${n(Math.round(A.dayRev))} ₽ · вечером ${n(Math.round(A.eveRev))} ₽${hasDayPlan ? ` · в плане ${(A.rev_plan_day / A.rev_plan * 100).toFixed(1)}%` : ''}</div></div>
+      </div>
+      <div class="charts-grid half">
+        <div class="chart-card"><h3>Выручка днём ${hasDayPlan ? '— факт / план' : '— факт / среднее'}</h3><div class="chart-wrap" style="height:280px"><canvas id="chart-lunch"></canvas></div></div>
+        <div class="chart-card"><h3>Обед и вечер по дням</h3><div class="chart-wrap" style="height:280px"><canvas id="chart-split"></canvas></div></div>
+      </div>`;
+    } else if (A.rev) {
+      html += `<div class="kpi-note" style="margin:-4px 0 16px">Дневная выручка в таблице заполняется с сентября 2026.</div>`;
+    }
+  }
+
+  // ═══ ТАБЛИЦА ДНЕЙ ═══
+  html += monthTable(events, hasPlan, year, mon);
+  document.getElementById('main-content').innerHTML = html;
+
+  const sync = () => { const a = document.getElementById('fdf').value, b = document.getElementById('fdt').value; filterDateFrom = a ? +a : null; filterDateTo = b ? +b : null; render(); };
+  document.getElementById('fdf').onchange = sync; document.getElementById('fdt').onchange = sync;
+  document.querySelectorAll('.dow-toggle-btn').forEach(b => b.onclick = () => { const d = b.dataset.dow; filterDows.has(d) ? filterDows.delete(d) : filterDows.add(d); render(); });
+  const rb = document.getElementById('dow-reset'); if (rb) rb.onclick = () => { filterDows.clear(); render(); };
+
+  // ── графики ──
+  const labels = events.map(r => ddmm(r.d) + ' ' + r.dw);
+  const avgLine = v => events.map(() => v != null ? Math.round(v) : null);
+  const colorBy = (fact, ref, pos, neg) => fact.map((v, i) => v == null ? 'rgba(148,163,184,0.35)' : ref[i] == null ? pos : v >= ref[i] ? pos : neg);
+  const GOOD = 'rgba(22,163,74,0.72)', BAD = 'rgba(220,38,38,0.65)';
+
+  const revF = events.map(r => r.hasFact ? r.r : null), revP = events.map(r => r.rp ?? null);
+  const revRef = hasPlan ? revP : avgLine(A.revPerDay);
+  charts.rev = new Chart(document.getElementById('chart-rev'), { type: 'bar', data: { labels, datasets: [
+    { label: 'Факт', data: revF, backgroundColor: hasPlan ? colorBy(revF, revP, GOOD, BAD) : colorBy(revF, revRef, 'rgba(99,102,241,0.8)', 'rgba(99,102,241,0.45)'), borderRadius: 3, order: 2 },
+    refLine(hasPlan ? 'План' : 'Среднее в день', revRef)] }, options: commonOpts(' ₽', true) });
+
+  const gF = events.map(r => r.hasFact ? r.g : null), gP = events.map(r => r.gp ?? null);
+  const gRef = hasPlan ? gP : avgLine(A.guestsPerDay);
+  charts.guests = new Chart(document.getElementById('chart-guests'), { type: 'bar', data: { labels, datasets: [
+    { label: 'Факт', data: gF, backgroundColor: colorBy(gF, gRef, 'rgba(99,102,241,0.8)', 'rgba(99,102,241,0.4)'), borderRadius: 3, order: 2 },
+    refLine(hasPlan ? 'План' : 'Среднее в день', gRef)] }, options: commonOpts(' чел', false) });
+
+  const cF = events.map(r => r.hasFact && r.g ? Math.round(r.r / r.g) : null), cP = events.map(r => r.rp && r.gp ? Math.round(r.rp / r.gp) : null);
+  const cRef = hasPlan ? cP : avgLine(A.check);
+  charts.check = new Chart(document.getElementById('chart-check'), { type: 'bar', data: { labels, datasets: [
+    { label: 'Факт', data: cF, backgroundColor: colorBy(cF, cRef, 'rgba(20,184,166,0.8)', 'rgba(20,184,166,0.4)'), borderRadius: 3, order: 2 },
+    refLine(hasPlan ? 'План' : 'Чек за месяц', cRef)] }, options: commonOpts(' ₽', false) });
+
+  if (document.getElementById('chart-lunch')) {
+    const lF = events.map(r => r.dr ?? null), lP = events.map(r => r.rpd ?? null);
+    const lRef = hasDayPlan ? lP : avgLine(A.dayDays ? A.dayRev / A.dayDays : null);
+    charts.lunch = new Chart(document.getElementById('chart-lunch'), { type: 'bar', data: { labels, datasets: [
+      { label: 'Факт днём', data: lF, backgroundColor: hasDayPlan ? colorBy(lF, lP, GOOD, BAD) : 'rgba(245,158,11,0.8)', borderRadius: 3, order: 2 },
+      refLine(hasDayPlan ? 'Дневной план' : 'Среднее', lRef, '#b45309')] }, options: commonOpts(' ₽', true) });
+    const eve = events.map(r => r.dr != null && r.hasFact ? r.r - r.dr : null);
+    const o = commonOpts(' ₽', true, { stacked: true });
+    o.plugins.tooltip.callbacks.footer = items => { const i = items[0].dataIndex; const r = events[i]; return r.dr != null && r.r ? 'доля обеда ' + (r.dr / r.r * 100).toFixed(1) + '%' : ''; };
+    charts.split = new Chart(document.getElementById('chart-split'), { type: 'bar', data: { labels, datasets: [
+      { label: 'Обед', data: lF, backgroundColor: 'rgba(245,158,11,0.85)', borderRadius: 2 },
+      { label: 'Вечер', data: eve, backgroundColor: 'rgba(49,46,129,0.8)', borderRadius: 2 }] }, options: o });
+  }
+}
+
+function monthTable(events, hasPlan, year, mon) {
+  const tbl = events.filter(r => (filterDows.size === 0 || filterDows.has(r.dw)) && (filterDateFrom == null || r.day >= filterDateFrom) && (filterDateTo == null || r.day <= filterDateTo));
+  const T = agg(tbl);
+  const over = tbl.filter(r => r.hasFact && r.rp != null && r.r >= r.rp).length;
+  const under = tbl.filter(r => r.hasFact && r.rp != null && r.r < r.rp).length;
+  const dOver = tbl.filter(r => r.dr != null && r.rpd && r.dr >= r.rpd).length;
+  const dUnder = tbl.filter(r => r.dr != null && r.rpd && r.dr < r.rpd).length;
+  const empty = tbl.filter(r => !r.hasFact).length;
+  const showDay = events.some(r => r.dr != null || r.rpd != null);
+  const dayPlan = events.some(r => r.rpd != null);
+  const nOverall = hasPlan ? 8 : 3, nDay = dayPlan ? 7 : 4;
+  const progCell = (p, cls = '') => p != null ? `<td class="r ${cls}"><div class="mini-prog"><div class="mini-bar"><div class="mini-fill" style="width:${Math.min(p, 100)}%;background:${progColor(p)}"></div></div><span class="pct-text" style="color:${progColor(p)}">${p.toFixed(1)}%</span></div></td>` : `<td class="r ${cls}"><span class="fr-na">—</span></td>`;
+  const tint = (f, p) => f == null || p == null ? '' : f >= p ? 'c-over' : 'c-under';
+
+  let html = `<div class="table-block" style="margin-top:8px">
+    <div class="table-header">
+      <h3>Дни — ${M[+mon]} ${year}</h3>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="tbl-filters">
+          <div class="dow-toggle-group">
+            ${DOW_ORDER.map(d => `<button type="button" class="dow-toggle-btn${filterDows.has(d) ? ' active' : ''}" data-dow="${d}">${d}</button>`).join('')}
+            ${filterDows.size ? `<button type="button" class="dow-toggle-reset" id="dow-reset">сбросить</button>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px">
+            <span>с</span><input type="number" id="fdf" class="tbl-filter" min="1" max="31" placeholder="1" value="${filterDateFrom ?? ''}" style="width:52px;text-align:center">
+            <span>по</span><input type="number" id="fdt" class="tbl-filter" min="1" max="31" placeholder="31" value="${filterDateTo ?? ''}" style="width:52px;text-align:center">
+          </div>
+        </div>
+        <div class="table-legend">
+          ${hasPlan ? `<span><span class="legend-dot" style="background:var(--primary)"></span>Общий: выше ${over} · ниже ${under}</span>` : ''}
+          ${dayPlan ? `<span><span class="legend-dot" style="background:var(--day)"></span>Дневной: выше ${dOver} · ниже ${dUnder}</span>` : ''}
+          <span><span class="legend-dot" style="background:#94a3b8"></span>Нет данных (${empty})</span>
+        </div>
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table class="events-table"><thead>
+      <tr class="grp-row"><th colspan="2"></th>
+        <th class="grp g-all" colspan="${nOverall}">${hasPlan ? 'Весь день · план / факт' : 'Весь день · факт'}</th>
+        ${showDay ? `<th class="grp g-day" colspan="${nDay}">${dayPlan ? 'Обед · план / факт' : 'Обед · факт'}</th>` : ''}</tr>
+      <tr><th>Дата</th><th>День</th>
+        ${hasPlan ? '<th class="r g-all-s">Выр. план</th>' : ''}<th class="r ${hasPlan ? '' : 'g-all-s'}">Выр. факт</th>${hasPlan ? '<th class="r">% плана</th><th class="r">Гости пл</th>' : ''}
+        <th class="r">Гости</th>${hasPlan ? '<th class="r">Δ гости</th>' : ''}<th class="r">Ср чек</th>${hasPlan ? '<th class="r">Δ чек</th>' : ''}
+        ${showDay ? `${dayPlan ? '<th class="r g-day-s">План</th>' : ''}<th class="r ${dayPlan ? '' : 'g-day-s'}">Факт</th>${dayPlan ? '<th class="r">% плана</th><th class="r">Гости пл</th>' : ''}<th class="r">Гости</th><th class="r">Чек</th><th class="r">Доля дня</th>` : ''}
+      </tr></thead><tbody>`;
+
+  tbl.forEach(r => {
+    const p2 = r.hasFact ? pct(r.r, r.rp) : null;
+    const pd = r.dr != null ? pct(r.dr, r.rpd) : null;
+    const chk = r.hasFact && r.g ? r.r / r.g : null;
+    const chkP = r.rp && r.gp ? r.rp / r.gp : null;
+    const dchk = r.dr != null && r.dg ? r.dr / r.dg : null;
+    const tA = hasPlan && r.hasFact ? tint(r.r, r.rp) : '';
+    const tD = r.dr != null && r.rpd ? tint(r.dr, r.rpd) : '';
+    html += `<tr class="${r.hasFact ? '' : 'row-empty'}">
+      <td style="color:var(--text-2);font-size:11px">${ddmm(r.d)}</td>
+      <td style="font-weight:600;${r.wkend ? 'color:#7c3aed' : ''}">${r.dw}</td>
+      ${hasPlan ? `<td class="r g-all-s ${tA}" style="color:var(--text-2)">${n(r.rp)}</td>` : ''}
+      <td class="r ${tA} ${hasPlan ? '' : 'g-all-s'}" style="font-weight:700">${r.hasFact ? n(r.r) : '—'}</td>
+      ${hasPlan ? progCell(p2, tA) + `<td class="r ${tA}" style="color:var(--text-3)">${n(r.gp)}</td>` : ''}
+      <td class="r ${tA}">${r.hasFact ? n(r.g) : '—'}</td>
+      ${hasPlan ? `<td class="r ${tA}">${r.hasFact && r.gp ? deltaTag(r.g - r.gp) : '<span class="fr-na">—</span>'}</td>` : ''}
+      <td class="r ${tA}">${chk ? n(Math.round(chk)) + ' ₽' : '—'}</td>
+      ${hasPlan ? `<td class="r ${tA}">${chk && chkP ? deltaTag(chk - chkP) : '<span class="fr-na">—</span>'}</td>` : ''}
+      ${showDay ? `${dayPlan ? `<td class="r g-day-s ${tD}" style="color:var(--text-2)">${r.rpd != null ? n(r.rpd) : '—'}</td>` : ''}
+        <td class="r ${tD} ${dayPlan ? '' : 'g-day-s'}" style="font-weight:700">${r.dr != null ? n(r.dr) : '—'}</td>
+        ${dayPlan ? progCell(pd, tD) + `<td class="r ${tD}" style="color:var(--text-3)">${r.gpd != null ? n(r.gpd) : '—'}</td>` : ''}
+        <td class="r ${tD}">${r.dg != null ? n(r.dg) : '—'}</td>
+        <td class="r ${tD}">${dchk ? n(Math.round(dchk)) + ' ₽' : '—'}</td>
+        <td class="r ${tD}">${r.dr != null && r.r ? (r.dr / r.r * 100).toFixed(1) + '%' : '—'}</td>` : ''}
+    </tr>`;
+  });
+  const tp = pct(T.rev, T.rev_plan);
+  const tdp = T.dayDays ? pct(T.dayRev, T.rev_plan_day) : null;
+  html += `<tr class="row-total">
+    <td colspan="2">ИТОГО — ${T.factDays} из ${tbl.length} дн.</td>
+    ${hasPlan ? `<td class="r g-all-s">${n(T.rev_plan)}</td>` : ''}
+    <td class="r ${hasPlan ? '' : 'g-all-s'}">${n(T.rev)}</td>
+    ${hasPlan ? progCell(tp) + `<td class="r">${n(T.guests_plan)}</td>` : ''}
+    <td class="r">${n(T.guests)}</td>
+    ${hasPlan ? `<td class="r">${T.guests != null ? deltaTag(T.guests - T.guests_plan) : '—'}</td>` : ''}
+    <td class="r">${T.check ? n(Math.round(T.check)) + ' ₽' : '—'}</td>
+    ${hasPlan ? `<td class="r">${T.check && T.check_plan ? deltaTag(T.check - T.check_plan) : '—'}</td>` : ''}
+    ${showDay ? `${dayPlan ? `<td class="r g-day-s">${n(T.rev_plan_day)}</td>` : ''}
+      <td class="r ${dayPlan ? '' : 'g-day-s'}">${T.dayDays ? n(Math.round(T.dayRev)) : '—'}</td>
+      ${dayPlan ? progCell(tdp) + `<td class="r">${n(T.guests_plan_day)}</td>` : ''}
+      <td class="r">${T.dayDays ? n(T.dayG) : '—'}</td>
+      <td class="r">${T.dayCheck ? n(Math.round(T.dayCheck)) + ' ₽' : '—'}</td>
+      <td class="r">${T.dayShare != null ? T.dayShare.toFixed(1) + '%' : '—'}</td>` : ''}
+  </tr></tbody></table></div></div>`;
+  return html;
+}
+
+// ══════════════════════════════════════════════
+//  TAB 2 — ДИНАМИКА
+// ══════════════════════════════════════════════
+const W_METRICS = {
+  rev:    { label: 'Выручка',     unit: ' ₽',   v: rows => agg(rows).rev, money: true },
+  guests: { label: 'Гости',       unit: ' чел', v: rows => agg(rows).guests },
+  check:  { label: 'Средний чек', unit: ' ₽',   v: rows => agg(rows).check },
+  lunch:  { label: 'Выручка днём', unit: ' ₽',  v: rows => agg(rows).dayRev, money: true, lunch: true },
+  lunchC: { label: 'Чек днём',    unit: ' ₽',   v: rows => agg(rows).dayCheck, lunch: true },
+};
+
+function renderDyn() {
+  let html = `<div class="y-controls"><div class="seg">
+      <button class="${dynMode === 'week' ? 'active' : ''}" onclick="dynMode='week';render()">Неделя к неделе</button>
+      <button class="${dynMode === 'month' ? 'active' : ''}" onclick="dynMode='month';render()">Месяц к месяцу</button>
+    </div><div id="dyn-right"></div></div><div id="dyn-body"></div>`;
+  document.getElementById('main-content').innerHTML = html;
+  if (dynMode === 'week') renderWeek(); else renderMonths();
+}
+
+// ── сравнение двух наборов дней: итог / будни / выходные + по дням недели ──
+function compareBlock(cur, prev, curName, prevName, opts = {}) {
+  const segs = [
+    { k: 'all', label: 'Вся неделя', f: r => true },
+    { k: 'wd', label: 'Будни · пн–чт, вс', f: r => !r.wkend },
+    { k: 'we', label: 'Выходные · пт–сб', f: r => r.wkend },
+  ];
+  const A = segs.map(s => [agg(cur.filter(s.f)), agg(prev.filter(s.f))]);
+  const hasLunch = A[0][0].dayDays || A[0][1].dayDays;
+  const hasPlan = A[0][0].rpPast || A[0][1].rpPast;
+  const metrics = CMP_METRICS.filter(m => (!m.lunch || hasLunch) && ((m.k !== 'plan' && m.k !== 'dplan') || hasPlan));
+
+  let h = `<div class="table-block"><div class="table-header"><h3>Ключевые показатели: ${curName} против ${prevName}</h3>
+    <div class="table-legend"><span>Δ — изменение к ${opts.prevShort || 'прошлому периоду'}; для долей и % плана — в процентных пунктах</span></div></div>
+    <div style="overflow-x:auto"><table class="events-table cmp-table"><thead>
+    <tr class="grp-row"><th></th>${segs.map((s, i) => `<th class="grp seg-start ${s.k === 'we' ? 'seg-wkend' : ''}" colspan="3" style="${s.k === 'all' ? 'background:var(--primary-light);color:#4338ca' : ''}">${s.label}</th>`).join('')}</tr>
+    <tr><th>Показатель</th>${segs.map(s => `<th class="r seg-start">${opts.curShort || 'тек.'}</th><th class="r">${opts.prevShort2 || 'прош.'}</th><th class="r">Δ</th>`).join('')}</tr>
+    </thead><tbody>`;
+  metrics.forEach(m => {
+    h += `<tr${m.lunch ? ' style="background:#fffbf3"' : ''}><td style="font-weight:600">${m.lunch ? '<span class="legend-dot" style="background:var(--day)"></span>' : ''}${m.label}</td>`;
+    A.forEach(([c, p]) => {
+      const vc = m.f(c), vp = m.f(p);
+      h += `<td class="r seg-start" style="font-weight:700">${fmtCmp(vc, m)}</td><td class="r" style="color:var(--text-2)">${fmtCmp(vp, m)}</td><td class="r">${pctTag(chgCmp(vc, vp, m), m.pp)}</td>`;
+    });
+    h += '</tr>';
+  });
+  if (hasPlan && A[0].some(x => x.planCover && x.planCover < x.factDays)) h += `<tr><td colspan="10" class="kpi-note" style="white-space:normal">% плана посчитан только по дням, где план задан (план ведётся с октября).</td></tr>`;
+  h += `<tr class="row-total"><td>Дней с данными</td>${A.map(([c, p]) => `<td class="r seg-start">${c.factDays}</td><td class="r">${p.factDays}</td><td></td>`).join('')}</tr>`;
+  h += `</tbody></table></div></div>`;
+
+  // по дням недели
+  const curBy = Object.fromEntries(cur.map(r => [r.dw, r])), prevBy = Object.fromEntries(prev.map(r => [r.dw, r]));
+  const cell = (a, b, unit) => `<td class="r bl" style="font-weight:700">${a != null ? n(Math.round(a)) + unit : '—'}</td><td class="r" style="color:var(--text-2)">${b != null ? n(Math.round(b)) + unit : '—'}</td><td class="r">${pctTag(a != null && b ? (a / b - 1) * 100 : null)}</td>`;
+  h += `<div class="table-block"><div class="table-header"><h3>По дням недели: ${opts.dowTitle || 'понедельник к понедельнику'}</h3><div class="table-legend"><span><span class="legend-dot" style="background:#ede9fe"></span>выходные</span></div></div>
+    <div style="overflow-x:auto"><table class="events-table"><thead>
+    <tr class="grp-row"><th colspan="2"></th><th class="grp g-all" colspan="3">Выручка</th><th class="grp" colspan="3">Гости</th><th class="grp" colspan="3">Средний чек</th>${hasLunch ? '<th class="grp g-day" colspan="3">Выручка днём</th>' : ''}</tr>
+    <tr><th>День</th><th>Даты</th>${['', '', '', ...(hasLunch ? [''] : [])].map(() => `<th class="r bl">${opts.curShort || 'тек.'}</th><th class="r">${opts.prevShort2 || 'прош.'}</th><th class="r">Δ</th>`).join('')}</tr>
+    </thead><tbody>`;
+  DOW_ORDER.forEach(d => {
+    const c = curBy[d], p = prevBy[d];
+    if (!c && !p) return;
+    const cf = c && c.hasFact ? c : null, pf = p && p.hasFact ? p : null;
+    h += `<tr class="${WEEKEND.includes(d) ? 'wkend' : ''}"><td style="font-weight:700">${DOW_FULL[d]}</td><td style="color:var(--text-3);font-size:11px">${c ? ddmm(c.d) : '—'} / ${p ? ddmm(p.d) : '—'}</td>
+      ${cell(cf?.r, pf?.r, '')}${cell(cf?.g, pf?.g, '')}${cell(cf && cf.g ? cf.r / cf.g : null, pf && pf.g ? pf.r / pf.g : null, '')}${hasLunch ? cell(cf?.dr, pf?.dr, '') : ''}</tr>`;
+  });
+  h += `</tbody></table></div></div>`;
+  return h;
+}
+
+function renderWeek() {
+  const idx = FACT_WEEKS.indexOf(curWeek);
+  document.getElementById('dyn-right').innerHTML = `<div class="wk-nav">
+    <button class="wk-arrow" ${idx <= 0 ? 'disabled' : ''} onclick="curWeek=FACT_WEEKS[${idx - 1}];render()">‹</button>
+    <select class="tbl-filter" style="font-size:12px;font-weight:600;padding:6px 10px" onchange="curWeek=this.value;render()">
+      ${[...FACT_WEEKS].reverse().map(w => `<option value="${w}"${w === curWeek ? ' selected' : ''}>${weekLabel(w)}</option>`).join('')}
+    </select>
+    <button class="wk-arrow" ${idx >= FACT_WEEKS.length - 1 ? 'disabled' : ''} onclick="curWeek=FACT_WEEKS[${idx + 1}];render()">›</button></div>`;
+
+  const prevW = addDays(curWeek, -7);
+  const curAll = ALL.filter(r => r.wk === curWeek);
+  const curRows = curAll.filter(r => r.hasFact);
+  const dows = new Set(curRows.map(r => r.dw));
+  const prevRows = ALL.filter(r => r.wk === prevW && r.hasFact && dows.has(r.dw));
+  let html = '';
+  if (dows.size < 7) html += `<div class="y-note">Неделя ещё не закрыта: есть данные за ${DOW_ORDER.filter(d => dows.has(d)).join(', ')}. Прошлая неделя взята за те же дни, чтобы сравнение было честным.</div>`;
+  if (!prevRows.length) html += `<div class="y-note">За неделю ${weekLabel(prevW)} данных нет — сравнивать не с чем.</div>`;
+
+  // карточки: вся неделя
+  const c = agg(curRows), p = agg(prevRows);
+  const card = (label, vc, vp, unit, lunch) => {
+    const ch = vc != null && vp ? (vc / vp - 1) * 100 : null;
+    return `<div class="kpi-card ${lunch ? 'lunch' : 'all'}"><div class="kpi-label">${label}</div><div class="kpi-fact">${vc != null ? n(Math.round(vc)) : '—'}<span style="font-size:13px;font-weight:400;color:var(--text-3)"> ${unit}</span></div>
+      <div class="kpi-row"><span class="kpi-plan">прошлая ${vp != null ? n(Math.round(vp)) + ' ' + unit : '—'}</span>${ch != null ? `<span class="kpi-delta ${ch >= 0 ? 'delta-pos' : 'delta-neg'}">${sg(ch)}${f1(ch)}%</span>` : ''}</div></div>`;
+  };
+  html += `<div class="kpi-grid">${card('Выручка за неделю', c.rev, p.rev, '₽')}${card('Гости', c.guests, p.guests, 'чел')}${card('Средний чек', c.check, p.check, '₽')}${c.dayDays || p.dayDays ? card('Выручка днём', c.dayRev, p.dayRev, '₽', true) : ''}</div>`;
+
+  html += compareBlock(curRows, prevRows, ddmm(curWeek) + '–' + ddmm(addDays(curWeek, 6)), ddmm(prevW) + '–' + ddmm(addDays(prevW, 6)), { prevShort: 'прошлой неделе', curShort: 'эта', prevShort2: 'прош.' });
+
+  // графики
+  const WM = W_METRICS[wMetric];
+  html += `<div class="y-controls"><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(W_METRICS).map(k => `<button class="m-btn${W_METRICS[k].lunch ? ' lunch' : ''}${k === wMetric ? ' active' : ''}" onclick="wMetric='${k}';render()">${W_METRICS[k].label}</button>`).join('')}</div></div>
+  <div class="charts-grid half">
+    <div class="chart-card"><h3>${WM.label} по дням недели — эта / прошлая</h3><div class="chart-wrap" style="height:300px"><canvas id="w-dow"></canvas></div></div>
+    <div class="chart-card"><h3>${WM.label} — последние недели${WM.money || wMetric === 'guests' ? ' (в среднем за день)' : ''}</h3><div class="chart-wrap" style="height:300px"><canvas id="w-trend"></canvas></div></div>
+  </div>`;
+  document.getElementById('dyn-body').innerHTML = html;
+
+  const curBy = Object.fromEntries(curRows.map(r => [r.dw, r])), prevAllBy = Object.fromEntries(ALL.filter(r => r.wk === prevW && r.hasFact).map(r => [r.dw, r]));
+  const one = (r) => r ? WM.v([r]) : null;
+  charts.wdow = new Chart(document.getElementById('w-dow'), { type: 'bar', data: { labels: DOW_ORDER, datasets: [
+    { label: 'Прошлая', data: DOW_ORDER.map(d => one(prevAllBy[d])), backgroundColor: 'rgba(148,163,184,0.55)', borderRadius: 4 },
+    { label: 'Эта', data: DOW_ORDER.map(d => one(curBy[d])), backgroundColor: WM.lunch ? 'rgba(245,158,11,0.85)' : 'rgba(99,102,241,0.85)', borderRadius: 4 }] },
+    options: commonOpts(WM.unit, !!WM.money) });
+
+  const weeks = FACT_WEEKS.slice(Math.max(0, idx - 9), idx + 1);
+  const perDay = WM.money || wMetric === 'guests';
+  const tv = weeks.map(w => { const rows = ALL.filter(r => r.wk === w && r.hasFact); const v = WM.v(rows); return v == null ? null : perDay ? v / rows.length : v; });
+  const tch = tv.map((v, i) => i && v != null && tv[i - 1] ? (v / tv[i - 1] - 1) * 100 : null);
+  charts.wtrend = new Chart(document.getElementById('w-trend'), { type: 'bar', data: { labels: weeks.map(w => ddmm(w) + (ALL.filter(r => r.wk === w && r.hasFact).length < 7 ? '*' : '')), datasets: [
+    { label: WM.label + (perDay ? ' в день' : ''), data: tv.map(v => v != null ? Math.round(v) : null), backgroundColor: weeks.map(w => w === curWeek ? (WM.lunch ? 'rgba(245,158,11,0.9)' : 'rgba(99,102,241,0.9)') : 'rgba(148,163,184,0.5)'), borderRadius: 4 }] },
+    options: { ...commonOpts(WM.unit, !!WM.money), plugins: { ...commonOpts(WM.unit, !!WM.money).plugins, legend: { display: false } } }, plugins: [pctLabelsPlugin(tch)] });
+}
+
+// ── месяц к месяцу ──
+const Y_METRICS = {
+  rev:    { label: 'Выручка',        unit: ' ₽',   fact: a => a.rev,          plan: a => a.rev_plan,       money: true },
+  guests: { label: 'Гости',          unit: ' чел', fact: a => a.guests,       plan: a => a.guests_plan },
+  check:  { label: 'Средний чек',    unit: ' ₽',   fact: a => a.check,        plan: a => a.check_plan },
+  revday: { label: 'Выручка в день', unit: ' ₽',   fact: a => a.revPerDay,    plan: a => a.planDays ? a.rev_plan / a.planDays : null, money: true },
+  lunch:  { label: 'Выручка днём',   unit: ' ₽',   fact: a => a.dayRev,       plan: a => a.rev_plan_day,   money: true, lunch: true },
+  lunchC: { label: 'Чек днём',       unit: ' ₽',   fact: a => a.dayCheck,     plan: a => a.dayCheck_plan,  lunch: true },
+  share:  { label: 'Доля обеда',     unit: '%',    fact: a => a.dayShare,     plan: a => a.rev_plan_day && a.rev_plan ? a.rev_plan_day / a.rev_plan * 100 : null, lunch: true, pp: true },
+};
+const fmtM = (v, mk) => v == null ? '—' : Y_METRICS[mk].pp ? f1(v) + '%' : (Y_METRICS[mk].money && Math.abs(v) >= 1e6 ? nm(v) : n(Math.round(v))) + Y_METRICS[mk].unit;
+
+function monthAgg(ym) {
+  const rows = rowsOf(ym).filter(r => (dDayFrom == null || r.day >= dDayFrom) && (dDayTo == null || r.day <= dDayTo));
+  const a = agg(rows);
+  a.ym = ym; a.isPlanOnly = a.factDays === 0 && a.planDays > 0;
+  a.partial = !a.isPlanOnly && a.factDays < rows.length; a.calDays = rows.length;
+  return a;
+}
+
+function renderMonths() {
+  const mk = dMetric, MC = Y_METRICS[mk];
+  document.getElementById('dyn-right').innerHTML = `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-3)">
+      <span>числа месяца с</span><input type="number" id="ydf" class="tbl-filter" min="1" max="31" placeholder="1" value="${dDayFrom ?? ''}" style="width:52px;text-align:center">
+      <span>по</span><input type="number" id="ydt" class="tbl-filter" min="1" max="31" placeholder="31" value="${dDayTo ?? ''}" style="width:52px;text-align:center">
+      ${dDayFrom != null || dDayTo != null ? '<button class="dow-toggle-reset" id="yreset">сбросить</button>' : ''}</div>`;
+  const data = MONTHS.map(monthAgg).filter(a => a.factDays || a.planDays);
+  const facts = data.filter(a => !a.isPlanOnly);
+  const valK = (a, k) => a.isPlanOnly ? Y_METRICS[k].plan(a) : Y_METRICS[k].fact(a);
+  const chg = (v, pv, k) => v == null || pv == null ? null : Y_METRICS[k].pp ? v - pv : pv ? (v / pv - 1) * 100 : null;
+  const filt = (dDayFrom != null || dDayTo != null) ? ` · числа ${dDayFrom ?? 1}–${dDayTo ?? 31}` : '';
+
+  let html = `<div class="y-controls"><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(Y_METRICS).map(k => `<button class="m-btn${Y_METRICS[k].lunch ? ' lunch' : ''}${k === mk ? ' active' : ''}" onclick="dMetric='${k}';render()">${Y_METRICS[k].label}</button>`).join('')}</div></div>`;
+  const partial = facts.filter(a => a.partial).pop();
+  if (partial) html += `<div class="y-note">${M[+partial.ym.slice(5)]} заполнен за ${partial.factDays} из ${partial.calDays} дн. — суммы за месяц сравнивать рано: смотрите «Выручка в день», средний чек или задайте числа 1–${partial.factDays}.</div>`;
+
+  html += `<div class="charts-grid two">
+    <div class="chart-card"><h3>${MC.label} по месяцам${filt}</h3><div class="chart-wrap"><canvas id="y-main"></canvas></div></div>
+    <div class="chart-card"><h3>Прирост / отток м/м — ${MC.label.toLowerCase()}</h3><div class="chart-wrap"><canvas id="y-delta"></canvas></div></div>
+  </div>`;
+
+  const keys = ['rev', 'guests', 'check', 'revday', 'lunch', 'lunchC', 'share'];
+  let rowsHtml = '', prev = null;
+  data.forEach(a => {
+    const cells = keys.map(k => { const v = valK(a, k), pv = prev ? valK(prev, k) : null;
+      return `<td class="r bl" style="${k === mk ? 'font-weight:700' : ''}">${fmtM(v, k)}</td><td class="r">${pctTag(chg(v, pv, k), Y_METRICS[k].pp)}</td>`; }).join('');
+    const planPct = !a.isPlanOnly && a.rev_plan ? pct(a.rev, a.rpPast) : null;
+    rowsHtml += `<tr class="${a.isPlanOnly ? 'row-plan' : ''}"><td style="font-weight:600">${M[+a.ym.slice(5)]}${a.isPlanOnly ? '<span class="tag tag-plan">план</span>' : a.partial ? `<span class="tag tag-part">${a.factDays}/${a.calDays} дн</span>` : ''}</td>${cells}<td class="r bl">${planPct != null ? `<b style="color:${progColor(planPct)}">${planPct.toFixed(1)}%</b>` : '—'}</td></tr>`;
+    prev = a;
+  });
+  html += `<div class="table-block"><div class="table-header"><h3>Динамика по месяцам${filt}</h3><div class="table-legend"><span>Δ — к предыдущему месяцу; доля обеда — в п.п.</span></div></div>
+    <div style="overflow-x:auto"><table class="events-table"><thead>
+      <tr class="grp-row"><th></th><th class="grp g-all" colspan="8">Весь день</th><th class="grp g-day" colspan="6">Обед</th><th class="grp"></th></tr>
+      <tr><th>Месяц</th>${keys.map(k => `<th class="r bl">${Y_METRICS[k].label}</th><th class="r">Δ</th>`).join('')}<th class="r bl">% плана на сегодня</th></tr>
+    </thead><tbody>${rowsHtml}</tbody></table></div></div>`;
+
+  // дни недели × месяцы
+  const dk = ['revday', 'lunch', 'lunchC', 'share'].includes(mk) ? (Y_METRICS[mk].lunch ? 'lunch' : 'rev') : mk;
+  const dowVal = rows => { const f = rows.filter(r => r.hasFact); if (!f.length) return null; const a = agg(f);
+    return dk === 'check' ? a.check : dk === 'guests' ? a.guestsPerDay : dk === 'lunch' ? (a.dayDays ? a.dayRev / a.dayDays : null) : a.revPerDay; };
+  const dowLabel = dk === 'check' ? 'Средний чек' : dk === 'guests' ? 'Гостей в среднем за день' : dk === 'lunch' ? 'Дневная выручка в среднем за день' : 'Средняя выручка за день';
+  let dowRows = '';
+  const fm = facts;
+  DOW_ORDER.forEach(d => { let p = null;
+    const cells = fm.map(a => { const v = dowVal(rowsOf(a.ym).filter(r => r.dw === d && (dDayFrom == null || r.day >= dDayFrom) && (dDayTo == null || r.day <= dDayTo)));
+      const ch = v != null && p ? (v / p - 1) * 100 : null; const bg = ch == null ? '' : ch >= 5 ? 'background:#f0fdf4' : ch <= -5 ? 'background:#fef2f2' : ''; p = v;
+      return `<td class="r bl" style="${bg}">${v != null ? n(Math.round(v)) : '—'}<div style="font-size:10px">${pctTag(ch)}</div></td>`; }).join('');
+    dowRows += `<tr class="${WEEKEND.includes(d) ? 'wkend' : ''}"><td style="font-weight:600">${DOW_FULL[d]}</td>${cells}</tr>`; });
+  html += `<div class="table-block"><div class="table-header"><h3>${dowLabel} по дням недели${filt}</h3><div class="table-legend"><span>под значением — изменение к пред. месяцу; заливка — сдвиг больше ±5%</span></div></div>
+    <div style="overflow-x:auto"><table class="events-table"><thead><tr><th>День недели</th>${fm.map(a => `<th class="r bl">${M[+a.ym.slice(5)]}</th>`).join('')}</tr></thead><tbody>${dowRows}</tbody></table></div></div>`;
+
+  document.getElementById('dyn-body').innerHTML = html;
+  const sync = () => { const a = document.getElementById('ydf').value, b = document.getElementById('ydt').value; dDayFrom = a ? +a : null; dDayTo = b ? +b : null; render(); };
+  document.getElementById('ydf').onchange = sync; document.getElementById('ydt').onchange = sync;
+  const yr = document.getElementById('yreset'); if (yr) yr.onclick = () => { dDayFrom = dDayTo = null; render(); };
+
+  const labels = data.map(a => MS[+a.ym.slice(5)] + (a.isPlanOnly ? ' (план)' : a.partial ? '*' : ''));
+  const col = MC.lunch ? '245,158,11' : '99,102,241';
+  const tick = v => MC.pp ? v + '%' : MC.money ? tickRub(v) : n(v);
+  charts.main = new Chart(document.getElementById('y-main'), { type: 'bar', data: { labels, datasets: [
+    { label: 'Факт', data: data.map(a => a.isPlanOnly ? null : (MC.fact(a) != null ? +MC.fact(a).toFixed(1) : null)), backgroundColor: data.map(a => a.partial ? `rgba(${col},0.45)` : `rgba(${col},0.85)`), borderRadius: 5, order: 2 },
+    { label: 'План', data: data.map(a => MC.plan(a) != null ? +MC.plan(a).toFixed(1) : null), backgroundColor: `rgba(${col},0.08)`, borderColor: `rgb(${col})`, borderWidth: 1.5, borderRadius: 5, order: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 10 } }, tooltip: { callbacks: { label: c => c.raw == null ? null : ' ' + c.dataset.label + ': ' + fmtM(c.raw, mk) } } },
+      scales: { x: { grid: { display: false }, ticks: { color: '#64748b' } }, y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', callback: tick } } } } });
+
+  const dAbs = [], dP = [], dLab = [];
+  data.forEach((a, i) => { if (!i) return; const v = valK(a, mk), pv = valK(data[i - 1], mk);
+    dLab.push(MS[+data[i - 1].ym.slice(5)] + '→' + MS[+a.ym.slice(5)] + (a.isPlanOnly ? ' (план)' : ''));
+    dAbs.push(v != null && pv != null ? +(v - pv).toFixed(1) : null); dP.push(chg(v, pv, mk)); });
+  charts.delta = new Chart(document.getElementById('y-delta'), { type: 'bar',
+    data: { labels: dLab, datasets: [{ label: 'Δ м/м', data: dAbs, backgroundColor: dAbs.map((v, i) => v == null ? '#e2e8f0' : (data[i + 1].isPlanOnly ? (v >= 0 ? 'rgba(22,163,74,0.3)' : 'rgba(220,38,38,0.3)') : (v >= 0 ? 'rgba(22,163,74,0.75)' : 'rgba(220,38,38,0.7)'))), borderRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + sg(c.raw) + fmtM(c.raw, mk) } } },
+      scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }, y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', callback: tick } } } },
+    plugins: [pctLabelsPlugin(MC.pp ? dP.map(() => null) : dP)] });
+}
+
+// ══════════════════════════════════════════════
+//  TAB 3 — ГОД К ГОДУ
+//  месяц ↔ тот же месяц прошлого года; неделя ↔ неделя 52 недели назад (364 дня, день недели совпадает)
+// ══════════════════════════════════════════════
+const lyYm = ym => (+ym.slice(0, 4) - 1) + ym.slice(4);
+let FIRST_FACT;
+
+function renderYoY() {
+  const factMonths = MONTHS.filter(ym => ALL.some(r => r.ym === ym && r.hasFact));
+  const pairs = factMonths.filter(ym => ALL.some(r => r.ym === lyYm(ym) && r.hasFact));
+  const weekPairs = FACT_WEEKS.filter(w => ALL.some(r => r.wk === addDays(w, -364) && r.hasFact));
+  if (!weekPairs.includes(yoyWeek)) yoyWeek = weekPairs[weekPairs.length - 1] || curWeek;
+
+  let html = `<div class="y-controls"><div class="seg">
+      <button class="${yoyMode === 'month' ? 'active' : ''}" onclick="yoyMode='month';render()">Месяц к месяцу прошлого года</button>
+      <button class="${yoyMode === 'week' ? 'active' : ''}" onclick="yoyMode='week';render()">Неделя к неделе прошлого года</button>
+    </div><div id="yoy-right"></div></div>`;
+
+  const ready = yoyMode === 'month' ? pairs.length : weekPairs.length;
+  if (!ready) {
+    const first = FIRST_FACT ? fromISO(FIRST_FACT) : null;
+    const startYm = FIRST_FACT ? (+FIRST_FACT.slice(0, 4) + 1) + '-' + FIRST_FACT.slice(5, 7) : null;
+    const startWeek = FIRST_FACT ? addDays(mondayOf(FIRST_FACT), 364) : null;
+    html += `<div class="empty-state">
+      <h2>Сравнение год к году появится, когда накопится год данных</h2>
+      <p>Данные ведутся с ${first ? ddmm(FIRST_FACT) + '.' + FIRST_FACT.slice(0, 4) : '—'}. ${yoyMode === 'month'
+        ? `Первое сравнение — <b>${startYm ? M[+startYm.slice(5)].toLowerCase() + ' ' + startYm.slice(0, 4) + ' к ' + M[+startYm.slice(5)].toLowerCase() + 'у ' + (+startYm.slice(0, 4) - 1) : ''}</b>.`
+        : `Первая пара недель — <b>${startWeek ? weekLabel(startWeek) : ''}</b> к ${startWeek ? ddmm(addDays(startWeek, -364)) + '–' + ddmm(addDays(startWeek, -358)) : ''}.`}</p>
+      <p style="color:var(--text-3);font-size:12px">Неделя сравнивается с неделей ровно 52 недели назад, поэтому понедельник всегда идёт к понедельнику, а пятница к пятнице.</p>
+      <div class="empty-list">
+        <div>• выручка, гости, средний чек — год к году</div><div>• выручка, гости и чек днём (обед)</div>
+        <div>• будни и выходные (пт–сб) отдельно</div><div>• сравнение с начала года к тому же периоду</div>
+        <div>• график по месяцам: этот год / прошлый</div><div>• разбивка по дням недели</div>
+      </div></div>`;
+    // превью: текущие месяцы, прошлый год пустой
+    let rows = '';
+    factMonths.forEach(ym => { const a = agg(rowsOf(ym));
+      rows += `<tr><td style="font-weight:600">${M[+ym.slice(5)]}</td><td class="r bl">${nm(a.rev)} ₽</td><td class="r fr-na">—</td><td class="r fr-na">—</td><td class="r bl">${n(a.guests)}</td><td class="r fr-na">—</td><td class="r fr-na">—</td><td class="r bl">${n(Math.round(a.check))} ₽</td><td class="r fr-na">—</td><td class="r fr-na">—</td></tr>`; });
+    html += `<div class="table-block"><div class="table-header"><h3>Так будет выглядеть таблица</h3></div><div style="overflow-x:auto"><table class="events-table"><thead>
+      <tr class="grp-row"><th></th><th class="grp g-all" colspan="3">Выручка</th><th class="grp" colspan="3">Гости</th><th class="grp" colspan="3">Средний чек</th></tr>
+      <tr><th>Месяц</th>${[0, 1, 2].map(() => `<th class="r bl">${(LAST_FACT || '').slice(0, 4)}</th><th class="r">${+(LAST_FACT || '0').slice(0, 4) - 1}</th><th class="r">Δ</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    document.getElementById('main-content').innerHTML = html;
+    return;
+  }
+
+  if (yoyMode === 'week') {
+    const i = weekPairs.indexOf(yoyWeek);
+    html = html.replace('<div id="yoy-right"></div>', `<div class="wk-nav"><button class="wk-arrow" ${i <= 0 ? 'disabled' : ''} onclick="yoyWeek=weekPairsG[${i - 1}];render()">‹</button>
+      <select class="tbl-filter" style="font-size:12px;font-weight:600;padding:6px 10px" onchange="yoyWeek=this.value;render()">${[...weekPairs].reverse().map(w => `<option value="${w}"${w === yoyWeek ? ' selected' : ''}>${weekLabel(w)}</option>`).join('')}</select>
+      <button class="wk-arrow" ${i >= weekPairs.length - 1 ? 'disabled' : ''} onclick="yoyWeek=weekPairsG[${i + 1}];render()">›</button></div>`);
+    window.weekPairsG = weekPairs;
+    const ly = addDays(yoyWeek, -364);
+    const cur = ALL.filter(r => r.wk === yoyWeek && r.hasFact), dows = new Set(cur.map(r => r.dw));
+    const prev = ALL.filter(r => r.wk === ly && r.hasFact && dows.has(r.dw));
+    html += compareBlock(cur, prev, weekLabel(yoyWeek), ddmm(ly) + '–' + ddmm(addDays(ly, 6)) + ' ' + ly.slice(0, 4), { prevShort: 'той же неделе прошлого года', curShort: yoyWeek.slice(0, 4), prevShort2: ly.slice(0, 4), dowTitle: 'тот же день недели год назад' });
+    document.getElementById('main-content').innerHTML = html;
+    return;
+  }
+
+  // месяцы
+  const mk = yoyMetric, MC = Y_METRICS[mk];
+  html += `<div class="y-controls"><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(Y_METRICS).map(k => `<button class="m-btn${Y_METRICS[k].lunch ? ' lunch' : ''}${k === mk ? ' active' : ''}" onclick="yoyMetric='${k}';render()">${Y_METRICS[k].label}</button>`).join('')}</div></div>`;
+  // с начала года: те же даты прошлого года
+  const ty = LAST_FACT.slice(0, 4);
+  const ytdCur = ALL.filter(r => r.hasFact && r.d.startsWith(ty));
+  const ytdPrev = ytdCur.map(r => BY_DATE[(+ty - 1) + r.d.slice(4)]).filter(r => r && r.hasFact);
+  const yc = agg(ytdCur), yp = agg(ytdPrev);
+  const card = (label, vc, vp, unit) => { const ch = vc != null && vp ? (vc / vp - 1) * 100 : null;
+    return `<div class="kpi-card all"><div class="kpi-label">${label}</div><div class="kpi-fact">${vc != null ? n(Math.round(vc)) : '—'}<span style="font-size:13px;font-weight:400;color:var(--text-3)"> ${unit}</span></div>
+      <div class="kpi-row"><span class="kpi-plan">${+ty - 1}: ${vp != null ? n(Math.round(vp)) + ' ' + unit : '—'}</span>${ch != null ? `<span class="kpi-delta ${ch >= 0 ? 'delta-pos' : 'delta-neg'}">${sg(ch)}${f1(ch)}%</span>` : ''}</div></div>`; };
+  html += `<div class="kpi-grid">${card('Выручка с начала года', yc.rev, yp.rev, '₽')}${card('Гости с начала года', yc.guests, yp.guests, 'чел')}${card('Средний чек', yc.check, yp.check, '₽')}${card('Выручка днём', yc.dayRev, yp.dayRev, '₽')}</div>`;
+
+  const rows = factMonths.map(ym => ({ ym, c: agg(rowsOf(ym)), p: agg(rowsOf(lyYm(ym))) }));
+  html += `<div class="chart-card" style="margin-bottom:16px"><h3>${MC.label}: ${ty} / ${+ty - 1}</h3><div class="chart-wrap"><canvas id="yoy-main"></canvas></div></div>`;
+  const keys = ['rev', 'guests', 'check', 'lunch', 'lunchC'];
+  let tr = '';
+  rows.forEach(({ ym, c, p }) => { tr += `<tr><td style="font-weight:600">${M[+ym.slice(5)]}</td>${keys.map(k => { const a = Y_METRICS[k].fact(c), b = Y_METRICS[k].fact(p);
+    return `<td class="r bl" style="font-weight:700">${fmtM(a, k)}</td><td class="r" style="color:var(--text-2)">${fmtM(b, k)}</td><td class="r">${pctTag(a != null && b ? (a / b - 1) * 100 : null)}</td>`; }).join('')}</tr>`; });
+  html += `<div class="table-block"><div class="table-header"><h3>Месяцы: ${ty} к ${+ty - 1}</h3></div><div style="overflow-x:auto"><table class="events-table"><thead>
+    <tr class="grp-row"><th></th>${keys.map(k => `<th class="grp ${Y_METRICS[k].lunch ? 'g-day' : ''}" colspan="3">${Y_METRICS[k].label}</th>`).join('')}</tr>
+    <tr><th>Месяц</th>${keys.map(() => `<th class="r bl">${ty}</th><th class="r">${+ty - 1}</th><th class="r">Δ</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML = html;
+
+  charts.yoy = new Chart(document.getElementById('yoy-main'), { type: 'bar', data: { labels: rows.map(r => MS[+r.ym.slice(5)]), datasets: [
+    { label: String(+ty - 1), data: rows.map(r => MC.fact(r.p)), backgroundColor: 'rgba(148,163,184,0.55)', borderRadius: 4 },
+    { label: ty, data: rows.map(r => MC.fact(r.c)), backgroundColor: MC.lunch ? 'rgba(245,158,11,0.85)' : 'rgba(99,102,241,0.85)', borderRadius: 4 }] },
+    options: commonOpts(MC.unit, !!MC.money) });
+}
+
+// ══════════════════════════════════════════════
+//  ВХОД / ЗАГРУЗКА
+// ══════════════════════════════════════════════
+async function sha256(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+const LS_KEY = 'chalbar_dash_auth';
+function lsGet() { try { return localStorage.getItem(LS_KEY); } catch (e) { return null; } }
+function lsSet(v) { try { v ? localStorage.setItem(LS_KEY, v) : localStorage.removeItem(LS_KEY); } catch (e) {} }
+
+async function refreshData(first) {
+  const st = document.getElementById('upd');
+  const btn = document.getElementById('btn-refresh');
+  st.textContent = 'загрузка из таблицы…'; btn.disabled = true;
+  let source = 'live', err = null;
+  try { setData(await loadSheet()); }
+  catch (e) { err = e; source = 'snapshot'; if (first || !ALL) setData(SNAPSHOT); }
+  btn.disabled = false;
+  const now = new Date();
+  st.innerHTML = source === 'live'
+    ? `данные по ${ddmm(LAST_FACT)} · обновлено ${pad(now.getHours())}:${pad(now.getMinutes())}`
+    : `<span style="color:#fca5a5" title="${String(err && err.message || err).replace(/"/g, '')}">нет связи с таблицей · снимок по ${ddmm(LAST_FACT)}</span>`;
+  initSelectors();
+  render();
+}
+
+async function tryLogin(pass, remember) {
+  if ((await sha256(pass)) !== PASS_HASH) return false;
+  if (remember) lsSet(PASS_HASH); else lsSet(null);
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  refreshData(true);
+  return true;
+}
+function logout() { lsSet(null); location.reload(); }
+
+function boot() {
+  document.getElementById('btn-refresh').onclick = () => refreshData(false);
+  if (lsGet() === PASS_HASH) { document.getElementById('login').style.display = 'none'; document.getElementById('app').style.display = ''; refreshData(true); return; }
+  const f = document.getElementById('login-form');
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const ok = await tryLogin(document.getElementById('login-pass').value, document.getElementById('login-remember').checked);
+    if (!ok) { const er = document.getElementById('login-err'); er.style.display = 'block'; document.getElementById('login-pass').select(); }
+  };
+  document.getElementById('login-pass').focus();
+}
+boot();
+
+
+
+</script>
+</body>
+</html>
